@@ -17,7 +17,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinijuegoCazaRatones.unity
     guid: 6adf65c92fa20734a8d73e358a839e2d
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/HabitacionGatos.unity
     guid: 7d24df4282e86724d8a592e5c8b73f3d
+  - enabled: 1
+    path: Assets/Scenes/MinijuegoMemory.unity
+    guid: 560ad9f0de48dc94d8c08082b3c21cd6
   m_configObjects: {}
