@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class CartaMemory : MonoBehaviour
+public class CartaMemory : MonoBehaviour, IPointerClickHandler
 {
     private Sprite icono;
     private Sprite reverso;
@@ -34,7 +35,7 @@ public class CartaMemory : MonoBehaviour
         volteada = true;
     }
 
-    public void OnClick()
+    public void OnPointerClick(PointerEventData eventData)
     {
         if (emparejada || volteada) return;
         gestor?.CartaSeleccionada(this);

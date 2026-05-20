@@ -44,7 +44,7 @@ public class GestorMemory : MonoBehaviour
         if (!juegoActivo) return;
         tiempoActual -= Time.deltaTime;
         if (textoTiempo != null)
-            textoTiempo.text = "⏱ " + Mathf.CeilToInt(tiempoActual);
+            textoTiempo.text = "Tiempo : " + Mathf.CeilToInt(tiempoActual);
         if (tiempoActual <= 0) TerminarJuego(false);
     }
 
@@ -139,7 +139,7 @@ public class GestorMemory : MonoBehaviour
         }
     }
 
-    private void Volver()
+    public void Volver()
     {
         SceneManager.LoadScene("CafeScene");
     }
