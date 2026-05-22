@@ -34,9 +34,21 @@ public class GestorMemory : MonoBehaviour
     void Start()
     {
         tiempoActual = tiempoLimite;
-        GenerarTablero();
         panelResultado?.SetActive(false);
         botonVolver?.onClick.AddListener(Volver);
+        juegoActivo = false;
+
+        CuentaAtras ca = FindObjectOfType<CuentaAtras>();
+        if (ca != null)
+            ca.OnFinCuentaAtras += IniciarJuego;
+        else
+            IniciarJuego();
+    }
+
+    private void IniciarJuego()
+    {
+        GenerarTablero();
+        juegoActivo = true;
     }
 
     void Update()

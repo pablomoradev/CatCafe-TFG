@@ -23,4 +23,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinijuegoMemory.unity
     guid: 560ad9f0de48dc94d8c08082b3c21cd6
+  - enabled: 1
+    path: Assets/Scenes/MinijuegoAtrapar.unity
+    guid: e8b4aa736c0630e41a23e570f19a5ce2
   m_configObjects: {}

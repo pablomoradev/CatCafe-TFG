@@ -32,12 +32,15 @@ public class GestorCazaRatones : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    void Start()
     {
-        if (GestorMinijuegos.Instance?.GatoActual != null)
-            dificultad = GestorMinijuegos.Instance.GatoActual.dificultad - 1;
+        juegoActivo = false;
 
-        IniciarJuego();
+        CuentaAtras ca = FindObjectOfType<CuentaAtras>();
+        if (ca != null)
+            ca.OnFinCuentaAtras += IniciarJuego;
+        else
+            IniciarJuego();
     }
 
     private void IniciarJuego()

@@ -42,7 +42,17 @@ public class GestorAtrapar : MonoBehaviour
     {
         tiempoActual = tiempoLimite;
         panelResultado?.SetActive(false);
+        juegoActivo = false; // empieza inactivo
 
+        CuentaAtras ca = FindObjectOfType<CuentaAtras>();
+        if (ca != null)
+            ca.OnFinCuentaAtras += IniciarJuego;
+        else
+            IniciarJuego();
+    }
+
+    private void IniciarJuego()
+    {
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas != null)
         {
@@ -50,7 +60,6 @@ public class GestorAtrapar : MonoBehaviour
             limiteIzquierdo = -rt.rect.width / 2 + bandeja.rect.width / 2;
             limiteDerecho = rt.rect.width / 2 - bandeja.rect.width / 2;
         }
-
         StartCoroutine(SpawnProductos());
         juegoActivo = true;
     }
