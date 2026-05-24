@@ -171,6 +171,8 @@ public class GestorBuscaBugs : MonoBehaviour
 
         if (gano)
         {
+            GestorMinijuegos.Instance?.MinijuegoCompletado(); 
+            GestorMinijuegos.Instance?.MinijuegoGanado();    
             GameManager.Instance?.AnadirDinero(recompensa);
             textoFinal?.SetText("Bugs eliminados!\n+" + recompensa + " monedas\nTiempo: " + Mathf.FloorToInt(tiempoActual) + "s");
         }

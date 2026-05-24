@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nombreGato: Alex
   fotoGato: {fileID: -1233056232, guid: b83f08401f12df24cada556c9d2b9aa6, type: 3}
-  descripcion: Esos ojitos seguro que hacen rebajes
+  descripcion: El primer gato que sabe de Java
   dificultad: 2
   tipoBonus: 4
   valorBonus: 2

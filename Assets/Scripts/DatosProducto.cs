@@ -22,6 +22,9 @@ public class DatosProducto : ScriptableObject
     [Header("Precio")]
     public int precio;
 
+    [Header("Desbloqueo")]
+    public int costeDesbloqueo; 
+
     [Header("Tipo")]
     public TipoProducto tipo;
     public OrigenProducto origen;

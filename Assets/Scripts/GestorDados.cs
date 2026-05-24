@@ -183,6 +183,8 @@ public class GestorDados : MonoBehaviour
             OcultarUI();
             int ganado = dineroJugador - dineroInicialJugador;
             GameManager.Instance?.AnadirDinero(ganado);
+            GestorMinijuegos.Instance?.MinijuegoCompletado(); 
+            GestorMinijuegos.Instance?.MinijuegoGanado();     
             textoFinal?.SetText("Davy Jones se quedo sin dinero.\nTe quedas con su corazon. +" + ganado + " reales");
             panelResultado?.SetActive(true);
             juegoActivo = false;
@@ -231,6 +233,8 @@ public class GestorDados : MonoBehaviour
         if (puntosJugador > puntosIA)
         {
             if (diferencia > 0) GameManager.Instance?.AnadirDinero(diferencia);
+            GestorMinijuegos.Instance?.MinijuegoCompletado(); // ← AÑADIR
+            GestorMinijuegos.Instance?.MinijuegoGanado();     // ← AÑADIR
             textoFinal?.SetText("Venciste a Davy Jones.\nTe quedas con tu corazon. +" + Mathf.Max(0, diferencia) + " monedas");
         }
         else

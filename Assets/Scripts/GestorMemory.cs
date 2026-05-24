@@ -140,6 +140,8 @@ public class GestorMemory : MonoBehaviour
 
         if (gano)
         {
+            GestorMinijuegos.Instance?.MinijuegoCompletado();
+            GestorMinijuegos.Instance?.MinijuegoGanado();
             GameManager.Instance?.AnadirDinero(recompensaGanar);
             if (textoResultado != null)
                 textoResultado.text = "¡Has ganado!\n+" + recompensaGanar + " monedas";
@@ -149,6 +151,7 @@ public class GestorMemory : MonoBehaviour
             if (textoResultado != null)
                 textoResultado.text = "¡Se acabó el tiempo!";
         }
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Memory Tech", parejasEncontradas * 5);
     }
 
     public void Volver()

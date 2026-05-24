@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1a240dac1debe3479ed8bb5f0e4ad66, type: 3}
   m_Name: donut
   m_EditorClassIdentifier: 
-  nombreProducto: 
-  iconoProducto: {fileID: 0}
-  precio: 0
-  tipo: 0
-  origen: 0
-  cooldown: 0
+  nombreProducto: Donut
+  iconoProducto: {fileID: 21300000, guid: c3615638a15ef454aa568f5f3d7bc0dd, type: 3}
+  precio: 3
+  costeDesbloqueo: 6
+  tipo: 1
+  origen: 1
+  cooldown: 5

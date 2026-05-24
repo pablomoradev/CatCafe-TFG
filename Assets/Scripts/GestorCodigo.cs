@@ -181,6 +181,14 @@ public class GestorCodigo : MonoBehaviour
     {
         juegoActivo = false;
         panelResultado?.SetActive(true);
+
+        bool completo = preguntaActual >= preguntas.Count; 
+        if (completo)
+        {
+            GestorMinijuegos.Instance?.MinijuegoCompletado(); 
+            GestorMinijuegos.Instance?.MinijuegoGanado();     
+        }
+
         GameManager.Instance?.AnadirDinero(puntuacion);
         if (textoFinal != null)
             textoFinal.text = "Fin del juego!\n+" + puntuacion + " monedas";

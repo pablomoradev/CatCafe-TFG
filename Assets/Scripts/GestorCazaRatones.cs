@@ -107,7 +107,10 @@ public class GestorCazaRatones : MonoBehaviour
         {
             string nombreGato = GestorMinijuegos.Instance?.GatoActual?.nombreGato ?? "el gato";
             uiMinijuego?.MostrarMensajeGanado($"¡Has ganado! {nombreGato} confía en ti !!");
+            GestorMinijuegos.Instance?.MinijuegoCompletado();
             GestorMinijuegos.Instance?.MinijuegoGanado();
+            Debug.Log("GestorMinijuegos: " + GestorMinijuegos.Instance);
+            Debug.Log("Ganado llamado");
         }
         else
         {

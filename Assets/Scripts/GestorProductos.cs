@@ -23,6 +23,8 @@ public class GestorProductos : MonoBehaviour
     private Dictionary<DatosProducto, Coroutine> cooldownsActivos = new();
     private List<DatosProducto> productosListos = new List<DatosProducto>();
 
+    private const string KEY_DESBLOQUEADO = "Producto_";
+
     void Awake() { Instance = this; }
 
     void Start()
@@ -33,19 +35,38 @@ public class GestorProductos : MonoBehaviour
         panelCocina?.SetActive(false);
     }
 
+    public bool EstaDesbloqueado(DatosProducto p)
+    {
+        if (p.costeDesbloqueo == 0) return true;
+        return PlayerPrefs.GetInt(KEY_DESBLOQUEADO + p.nombreProducto, 0) == 1;
+    }
+
     private void GenerarBotones(Transform contenedor, OrigenProducto origen)
     {
         if (contenedor == null || prefabBotonProducto == null) return;
+
+        foreach (Transform hijo in contenedor)
+            Destroy(hijo.gameObject);
 
         foreach (DatosProducto p in todosLosProductos)
         {
             if (p.origen != origen) continue;
 
             GameObject btn = Instantiate(prefabBotonProducto, contenedor);
-            btn.transform.Find("nombre")?.GetComponent<TextMeshProUGUI>()?.SetText(p.nombreProducto);
-            btn.transform.Find("precio")?.GetComponent<TextMeshProUGUI>()?.SetText(p.precio + " monedas");
+            bool desbloqueado = EstaDesbloqueado(p);
+
+            btn.transform.Find("nombre")?.GetComponent<TextMeshProUGUI>()
+                ?.SetText(p.nombreProducto);
+
+            btn.transform.Find("precio")?.GetComponent<TextMeshProUGUI>()
+                ?.SetText(desbloqueado ? p.precio + " monedas" : "🔒 " + p.costeDesbloqueo + " monedas");
+
             Image icono = btn.transform.Find("icono")?.GetComponent<Image>();
-            if (icono != null && p.iconoProducto != null) icono.sprite = p.iconoProducto;
+            if (icono != null && p.iconoProducto != null)
+            {
+                icono.sprite = p.iconoProducto;
+                icono.color = desbloqueado ? Color.white : new Color(0.3f, 0.3f, 0.3f, 1f);
+            }
 
             Slider barra = btn.transform.Find("barraCooldown")?.GetComponent<Slider>();
             Button boton = btn.GetComponent<Button>();
@@ -53,9 +74,27 @@ public class GestorProductos : MonoBehaviour
             if (boton != null)
             {
                 DatosProducto captura = p;
-                boton.onClick.AddListener(() => SeleccionarProducto(captura, boton, barra));
+                if (desbloqueado)
+                    boton.onClick.AddListener(() => SeleccionarProducto(captura, boton, barra));
+                else
+                    boton.onClick.AddListener(() => IntentarDesbloquear(captura));
             }
         }
+    }
+
+    private void IntentarDesbloquear(DatosProducto p)
+    {
+        if (!GameManager.Instance.TieneSuficiente(p.costeDesbloqueo))
+        {
+            GestorDialogos.Instance?.MostrarDialogo("Necesitas " + p.costeDesbloqueo + " monedas para desbloquear " + p.nombreProducto + ".");
+            return;
+        }
+        GameManager.Instance.GastarDinero(p.costeDesbloqueo);
+        PlayerPrefs.SetInt(KEY_DESBLOQUEADO + p.nombreProducto, 1);
+        PlayerPrefs.Save();
+        GestorDialogos.Instance?.MostrarDialogo("¡" + p.nombreProducto + " desbloqueado!");
+        GenerarBotones(contenedorCafetera, OrigenProducto.Cafetera);
+        GenerarBotones(contenedorCocina, OrigenProducto.Cocina);
     }
 
     public void AbrirCafetera()

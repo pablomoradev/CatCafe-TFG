@@ -128,4 +128,18 @@ public class GestorGatos : MonoBehaviour
         if (index < 0 || index >= todosLosGatos.Count) return;
         indexGatoActivo = index;
     }
+    public void SalvarGatoPorIndex(int index)
+    {
+        if (index < 0 || index >= todosLosGatos.Count) return;
+        DatosGato gato = todosLosGatos[index];
+        if (gato.estaSalvado) return;
+        SalvarGato(gato);
+        GestorBBDD.Instance?.GuardarGatoSalvado(index + 1, 100f);
+    }
+    public DatosGato ObtenerGatoPorIndex(int index)
+    {
+        if (index < 0 || index >= todosLosGatos.Count) return null;
+        return todosLosGatos[index];
+    }
+
 }

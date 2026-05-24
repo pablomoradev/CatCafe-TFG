@@ -138,6 +138,8 @@ public class GestorAtrapar : MonoBehaviour
     {
         juegoActivo = false;
         panelResultado?.SetActive(true);
+        GestorMinijuegos.Instance?.MinijuegoCompletado(); 
+        GestorMinijuegos.Instance?.MinijuegoGanado();     
         GameManager.Instance?.AnadirDinero(puntuacion);
         if (textoResultado != null)
             textoResultado.text = "¡Tiempo!\n+" + puntuacion + " monedas";
