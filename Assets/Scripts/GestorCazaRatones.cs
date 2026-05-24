@@ -114,5 +114,6 @@ public class GestorCazaRatones : MonoBehaviour
             uiMinijuego?.MostrarMensajePerdido("¡Se acabó el tiempo! ¿Lo intentamos de nuevo?");
             GestorMinijuegos.Instance?.MinijuegoPerdido();
         }
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Caza Ratones", ratonesAtrapados);
     }
 }

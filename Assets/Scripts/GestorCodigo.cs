@@ -184,6 +184,7 @@ public class GestorCodigo : MonoBehaviour
         GameManager.Instance?.AnadirDinero(puntuacion);
         if (textoFinal != null)
             textoFinal.text = "Fin del juego!\n+" + puntuacion + " monedas";
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Completa el Codigo", puntuacion);
     }
 
     public void Volver()

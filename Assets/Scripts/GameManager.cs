@@ -48,6 +48,7 @@ public class GameManager : MonoBehaviour
         int cantidadFinal = Mathf.RoundToInt(cantidad * MultiplicadorGanancias * bonusGato);
         Dinero += cantidadFinal;
         GestorUI.Instance?.ActualizarDinero(Dinero);
+        GestorBBDD.Instance?.ActualizarDineroJugador(Dinero);
     }
 
     public bool TieneSuficiente(int cantidad) => Dinero >= cantidad;

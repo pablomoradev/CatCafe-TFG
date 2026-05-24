@@ -178,6 +178,7 @@ public class GestorBuscaBugs : MonoBehaviour
         {
             textoFinal?.SetText("Encontraste un bug!\nEl codigo ha fallado...");
         }
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("BuscaBugs", gano ? 1 : 0);
     }
 
     public void Volver()

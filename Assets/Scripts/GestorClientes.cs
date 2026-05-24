@@ -137,11 +137,12 @@ public class GestorClientes : MonoBehaviour
         OcultarVinetas();
         GestorProductos.Instance?.LimpiarProductoPreparado();
         GameManager.Instance?.AnadirDinero(pedidoActual.precio);
+        GestorBBDD.Instance?.RegistrarPedido(pedidoActual.nombreProducto);
 
         GestorDialogos.Instance?.MostrarDialogo(new string[] {
-            "¡Aquí tiene su " + pedidoActual.nombreProducto + "!",
-            "+" + pedidoActual.precio + " monedas. ¡Buen trabajo!"
-        });
+        "¡Aquí tiene su " + pedidoActual.nombreProducto + "!",
+        "+" + pedidoActual.precio + " monedas. ¡Buen trabajo!"
+    });
     }
 
     private void ClienteSeFue()

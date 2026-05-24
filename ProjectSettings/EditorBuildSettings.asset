@@ -32,4 +32,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinijuegoCodigo.unity
     guid: e205316987b713240be78c7163b2236b
+  - enabled: 1
+    path: Assets/Scenes/MinijuegoBuscaBugs.unity
+    guid: a9a7cb8de47ffc34c813210a322bfe2a
   m_configObjects: {}

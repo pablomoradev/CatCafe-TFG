@@ -238,6 +238,7 @@ public class GestorDados : MonoBehaviour
             if (diferencia < 0) GameManager.Instance?.GastarDinero(Mathf.Abs(diferencia));
             textoFinal?.SetText("Davy Jones te ha vencido.\nSe queda con tu corazon. -" + Mathf.Abs(Mathf.Min(0, diferencia)) + " monedas");
         }
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Dados Davy Jones", puntosJugador);
     }
 
     public void Volver()

@@ -141,6 +141,7 @@ public class GestorAtrapar : MonoBehaviour
         GameManager.Instance?.AnadirDinero(puntuacion);
         if (textoResultado != null)
             textoResultado.text = "¡Tiempo!\n+" + puntuacion + " monedas";
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Atrapar Productos", puntuacion);
     }
 
     public void Volver()
