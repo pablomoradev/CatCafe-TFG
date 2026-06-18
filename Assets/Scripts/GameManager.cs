@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// Gestor principal del juego. Singleton con DontDestroyOnLoad
+// Gestiona el dinero, multiplicadores, guardado/carga y cambio de escenas
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -9,36 +11,40 @@ public class GameManager : MonoBehaviour
     public float MultiplicadorGanancias { get; private set; } = 1f;
     public bool HayPartidaGuardada => PlayerPrefs.HasKey("Dinero");
 
-    private GatoSalvado gatoActualEnEscena = null;
+    private GatoSalvado gatoActualEnEscena = null; // Referencia al gato activo en la cafeteria
 
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // Fuerza el reset en la primera ejecucion de cada build nueva
+        if (PlayerPrefs.GetInt("Version", 0) < 5)
+        {
+            PlayerPrefs.DeleteAll();
+            PlayerPrefs.SetInt("Version", 5);
+            PlayerPrefs.Save();
+        }
+
+        Screen.SetResolution(1280, 768, false);
     }
 
-    private void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnScenaCargada;
-    }
+    // Suscribirse al evento de carga de escena
+    private void OnEnable() { SceneManager.sceneLoaded += OnScenaCargada; }
+    private void OnDisable() { SceneManager.sceneLoaded -= OnScenaCargada; }
 
-    private void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnScenaCargada;
-    }
-
+    // Al cargar CafeScene, restaurar la partida guardada
     private void OnScenaCargada(Scene escena, LoadSceneMode modo)
     {
         if (escena.name == "CafeScene")
             CargarPartida();
     }
 
-    public void RegistrarGatoActivo(GatoSalvado gato)
-    {
-        gatoActualEnEscena = gato;
-    }
+    // Registra el gato activo para calcular su bonus en los pedidos
+    public void RegistrarGatoActivo(GatoSalvado gato) { gatoActualEnEscena = gato; }
 
+    // Anade dinero con multiplicadores aplicados (bonus de gato + multiplicador global)
     public void AnadirDinero(int cantidad)
     {
         float bonusGato = 1f;
@@ -51,26 +57,29 @@ public class GameManager : MonoBehaviour
         GestorBBDD.Instance?.ActualizarDineroJugador(Dinero);
     }
 
+    // Comprueba si el jugador tiene suficiente dinero
     public bool TieneSuficiente(int cantidad) => Dinero >= cantidad;
 
+    // Gasta dinero (penalizaciones, desbloqueo de productos)
     public void GastarDinero(int cantidad)
     {
         Dinero = Mathf.Max(0, Dinero - cantidad);
         GestorUI.Instance?.ActualizarDinero(Dinero);
     }
 
-    public void ModificarMultiplicador(float multiplicador)
-    {
-        MultiplicadorGanancias *= multiplicador;
-    }
+    // Modifica el multiplicador global de ganancias (bonus de gato MasGanancias)
+    public void ModificarMultiplicador(float multiplicador) { MultiplicadorGanancias *= multiplicador; }
 
+    // Carga una escena por nombre
     public void CargarEscena(string nombreEscena) => SceneManager.LoadScene(nombreEscena);
 
+    // Guarda la partida completa en PlayerPrefs
     public void GuardarPartida()
     {
         PlayerPrefs.SetInt("Dinero", Dinero);
         PlayerPrefs.SetFloat("Multiplicador", MultiplicadorGanancias);
 
+        // Guardar estado de cada gato (salvado o no)
         if (GestorGatos.Instance != null)
         {
             DatosGato[] gatos = GestorGatos.Instance.ObtenerTodosLosGatos();
@@ -81,14 +90,15 @@ public class GameManager : MonoBehaviour
         }
 
         PlayerPrefs.Save();
-        Debug.Log("Partida guardada. Dinero: " + Dinero);
     }
 
+    // Carga la partida desde PlayerPrefs
     public void CargarPartida()
     {
         Dinero = PlayerPrefs.GetInt("Dinero", 0);
         MultiplicadorGanancias = PlayerPrefs.GetFloat("Multiplicador", 1f);
 
+        // Restaurar estado de gatos
         if (GestorGatos.Instance != null)
         {
             DatosGato[] gatos = GestorGatos.Instance.ObtenerTodosLosGatos();
@@ -97,14 +107,21 @@ public class GameManager : MonoBehaviour
                 gatos[i].estaSalvado = PlayerPrefs.GetInt("Gato_" + i + "_Salvado", 0) == 1;
 
             int indexActivo = PlayerPrefs.GetInt("GatoActivo", -1);
-            if (indexActivo >= 0)
-                GestorGatos.Instance.EstablecerGatoActivo(indexActivo);
+            if (indexActivo >= 0) GestorGatos.Instance.EstablecerGatoActivo(indexActivo);
+        }
+
+        // Recoger monedas pendientes de minijuegos
+        int pendientes = PlayerPrefs.GetInt("Monedas_Pendientes", 0);
+        if (pendientes > 0)
+        {
+            Dinero += pendientes;
+            PlayerPrefs.DeleteKey("Monedas_Pendientes");
         }
 
         GestorUI.Instance?.ActualizarDinero(Dinero);
-        Debug.Log("Partida cargada. Dinero: " + Dinero);
     }
 
+    // Reinicia toda la partida y vuelve al menu principal
     public void ReiniciarPartida()
     {
         Dinero = 0;

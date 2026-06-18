@@ -20,4 +20,4 @@ MonoBehaviour:
   valorBonus: 2
   descripcionBonus: Es tan bonito que la gente paga el doble
   gastoPorDia: 0
-  estaSalvado: 1
+  estaSalvado: 0

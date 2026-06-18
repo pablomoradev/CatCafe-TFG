@@ -1,16 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Controla el comportamiento de un producto que cae en el minijuego.
 public class ProductoCayendo : MonoBehaviour
 {
-    private float velocidad;
-    private RectTransform bandeja;
-    private float limiteInferior;
-    private GestorAtrapar gestor;
-    private RectTransform rt;
-    private bool esMalo;
-    private int penalizacion;
+    private float velocidad;                 // Velocidad de caída.
+    private RectTransform bandeja;           // Bandeja del jugador.
+    private float limiteInferior;            // Límite para destruir objeto.
+    private GestorAtrapar gestor;           // Gestor del minijuego.
+    private RectTransform rt;               // RectTransform del producto.
 
+    private bool esMalo;                    // Si el producto es negativo.
+    private int penalizacion;               // Penalización si se atrapa.
+
+    // Inicializa el producto.
     public void Inicializar(float velocidad, RectTransform bandeja, float alturaCanvas, GestorAtrapar gestor, bool esMalo, int penalizacion)
     {
         this.velocidad = velocidad;
@@ -19,6 +22,7 @@ public class ProductoCayendo : MonoBehaviour
         this.gestor = gestor;
         this.esMalo = esMalo;
         this.penalizacion = penalizacion;
+
         rt = GetComponent<RectTransform>();
     }
 
@@ -26,35 +30,44 @@ public class ProductoCayendo : MonoBehaviour
     {
         if (rt == null) return;
 
+        // Movimiento hacia abajo.
         rt.anchoredPosition += Vector2.down * velocidad * Time.deltaTime;
 
         if (bandeja != null)
         {
+            float hitboxProducto = 60f;
+
             Rect rectProducto = new Rect(
-                rt.anchoredPosition.x - rt.rect.width / 2,
-                rt.anchoredPosition.y - rt.rect.height / 2,
-                rt.rect.width,
-                rt.rect.height
+                rt.anchoredPosition.x - hitboxProducto / 2,
+                rt.anchoredPosition.y - hitboxProducto / 2,
+                hitboxProducto,
+                hitboxProducto
             );
+
+            float hitboxAncho = 100f;
+            float hitboxAlto = 50f;
 
             Rect rectBandeja = new Rect(
-                bandeja.anchoredPosition.x - bandeja.rect.width / 2,
-                bandeja.anchoredPosition.y - bandeja.rect.height / 2,
-                bandeja.rect.width,
-                bandeja.rect.height
+                bandeja.anchoredPosition.x - hitboxAncho / 2,
+                bandeja.anchoredPosition.y - hitboxAlto / 2,
+                hitboxAncho,
+                hitboxAlto
             );
 
+            // Detecta colisión con la bandeja.
             if (rectProducto.Overlaps(rectBandeja))
             {
                 if (esMalo)
                     gestor?.ProductoMalo(penalizacion);
                 else
                     gestor?.ProductoAtrapado();
+
                 Destroy(gameObject);
                 return;
             }
         }
 
+        // Destruye el objeto si cae fuera de pantalla.
         if (rt.anchoredPosition.y < limiteInferior)
             Destroy(gameObject);
     }

@@ -2,6 +2,9 @@ using UnityEngine;
 using SQLite;
 using System.IO;
 
+// Gestiona la base de datos SQLite del juego
+// Singleton con DontDestroyOnLoad que crea las tablas al iniciar
+// y ofrece metodos para registrar pedidos, partidas y actualizar datos
 public class GestorBBDD : MonoBehaviour
 {
     public static GestorBBDD Instance { get; private set; }
@@ -15,150 +18,168 @@ public class GestorBBDD : MonoBehaviour
         IniciarBBDD();
     }
 
+    // Abre la conexion a la BBDD y crea las tablas si no existen
     private void IniciarBBDD()
     {
         string ruta = Path.Combine(Application.dataPath, "catcafe.db");
         db = new SQLiteConnection(ruta);
         CrearTablas();
-        Debug.Log("BBDD iniciada en: " + ruta);
     }
 
+    // Crea las 8 tablas del esquema relacional si no existen
     private void CrearTablas()
     {
         db.Execute(@"CREATE TABLE IF NOT EXISTS JUGADOR (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            dinero INTEGER DEFAULT 0,
-            fecha_inicio TEXT DEFAULT (date('now'))
+            Id_Jugador INTEGER PRIMARY KEY AUTOINCREMENT,
+            Dinero INTEGER DEFAULT 0,
+            Fecha_Inicio TEXT DEFAULT (date('now'))
         )");
 
         db.Execute(@"CREATE TABLE IF NOT EXISTS GATO (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Id_Gato INTEGER PRIMARY KEY AUTOINCREMENT,
+            Nombre TEXT NOT NULL,
+            Descripcion TEXT,
+            Tipo_Bonus TEXT NOT NULL,
+            Gasto INTEGER DEFAULT 0,
+            Salvado INTEGER DEFAULT 0
+        )");
+
+        db.Execute(@"CREATE TABLE IF NOT EXISTS PRODUCTOS (
+            Id_Prod INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
-            descripcion TEXT,
-            dificultad TEXT,
-            tipo_bonus TEXT,
-            valor_bonus REAL,
-            gasto_dia INTEGER
+            Tipo TEXT NOT NULL,
+            Precio INTEGER NOT NULL,
+            Origen TEXT NOT NULL,
+            Cooldown REAL DEFAULT 3.0,
+            Coste_Desbloqueo INTEGER DEFAULT 0,
+            Desbloqueado INTEGER DEFAULT 0
         )");
 
-        db.Execute(@"CREATE TABLE IF NOT EXISTS GATO_JUGADOR (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_jugador INTEGER NOT NULL,
-            id_gato INTEGER NOT NULL,
-            esta_salvado INTEGER DEFAULT 0,
-            felicidad REAL DEFAULT 0
-        )");
-
-        db.Execute(@"CREATE TABLE IF NOT EXISTS PRODUCTO (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            precio INTEGER,
-            tipo TEXT,
-            origen TEXT,
-            cooldown REAL
-        )");
-
-        db.Execute(@"CREATE TABLE IF NOT EXISTS PEDIDO (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_jugador INTEGER NOT NULL,
-            id_producto INTEGER NOT NULL,
-            fecha TEXT DEFAULT (datetime('now')),
-            completado INTEGER DEFAULT 0
+        db.Execute(@"CREATE TABLE IF NOT EXISTS PEDIDOS (
+            Id_Pedido INTEGER PRIMARY KEY AUTOINCREMENT,
+            Id_Prod INTEGER,
+            fecha_ped TEXT DEFAULT (datetime('now')),
+            completado INTEGER DEFAULT 0,
+            importe INTEGER DEFAULT 0,
+            FOREIGN KEY (Id_Prod) REFERENCES PRODUCTOS(Id_Prod)
         )");
 
         db.Execute(@"CREATE TABLE IF NOT EXISTS MINIJUEGO (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            dificultad TEXT,
-            recompensa INTEGER
+            Id_Minijuego INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL
         )");
 
-        db.Execute(@"CREATE TABLE IF NOT EXISTS PARTIDA_MINIJUEGO (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_jugador INTEGER NOT NULL,
-            id_minijuego INTEGER NOT NULL,
-            puntuacion INTEGER,
-            fecha TEXT DEFAULT (datetime('now'))
+        db.Execute(@"CREATE TABLE IF NOT EXISTS JUEGA (
+            Id_Jugador INTEGER,
+            Id_Minijuego INTEGER,
+            puntuacion INTEGER DEFAULT 0,
+            fecha TEXT DEFAULT (datetime('now')),
+            ganado INTEGER DEFAULT 0,
+            PRIMARY KEY (Id_Jugador, Id_Minijuego),
+            FOREIGN KEY (Id_Jugador) REFERENCES JUGADOR(Id_Jugador),
+            FOREIGN KEY (Id_Minijuego) REFERENCES MINIJUEGO(Id_Minijuego)
+        )");
+
+        db.Execute(@"CREATE TABLE IF NOT EXISTS MJ_SALVACION (
+            Id_Minijuego INTEGER PRIMARY KEY,
+            Id_Gato INTEGER UNIQUE,
+            FOREIGN KEY (Id_Minijuego) REFERENCES MINIJUEGO(Id_Minijuego),
+            FOREIGN KEY (Id_Gato) REFERENCES GATO(Id_Gato)
+        )");
+
+        db.Execute(@"CREATE TABLE IF NOT EXISTS MJ_RECADO (
+            Id_Minijuego INTEGER PRIMARY KEY,
+            Monedas INTEGER NOT NULL,
+            FOREIGN KEY (Id_Minijuego) REFERENCES MINIJUEGO(Id_Minijuego)
         )");
 
         InsertarDatosIniciales();
     }
 
+    // Inserta los datos iniciales si las tablas estan vacias
+    // (jugador, 3 gatos, 8 productos, 6 minijuegos con sus tipos)
     private void InsertarDatosIniciales()
     {
-        // Jugador
+        // Jugador por defecto
         int count = db.ExecuteScalar<int>("SELECT COUNT(*) FROM JUGADOR");
         if (count == 0)
-            db.Execute("INSERT INTO JUGADOR (nombre, dinero) VALUES ('Jugador', 0)");
+            db.Execute("INSERT INTO JUGADOR (Dinero) VALUES (0)");
 
-        // Gatos
+        // 3 gatos con sus bonus
         int gatosCount = db.ExecuteScalar<int>("SELECT COUNT(*) FROM GATO");
         if (gatosCount == 0)
         {
-            db.Execute("INSERT INTO GATO (nombre, descripcion, dificultad, tipo_bonus, valor_bonus, gasto_dia) VALUES ('Milo', 'Gato jugueton', 'Facil', 'MasGanancias', 1.1, 5)");
-            db.Execute("INSERT INTO GATO (nombre, descripcion, dificultad, tipo_bonus, valor_bonus, gasto_dia) VALUES ('Lira', 'Gato tranquilo', 'Dificil', 'MasPacienciaClientes', 1.2, 15)");
-            db.Execute("INSERT INTO GATO (nombre, descripcion, dificultad, tipo_bonus, valor_bonus, gasto_dia) VALUES ('Alex', 'Gato listo', 'Intermedia', 'MasClientesPorHora', 1.15, 10)");
+            db.Execute("INSERT INTO GATO (Nombre, Descripcion, Tipo_Bonus, Gasto, Salvado) VALUES ('Milo', 'Gato jugueton', 'MasGanancias', 5, 0)");
+            db.Execute("INSERT INTO GATO (Nombre, Descripcion, Tipo_Bonus, Gasto, Salvado) VALUES ('Lira', 'Gato tranquilo', 'MasPacienciaClientes', 15, 0)");
+            db.Execute("INSERT INTO GATO (Nombre, Descripcion, Tipo_Bonus, Gasto, Salvado) VALUES ('Alex', 'Gato listo', 'MasClientesPorHora', 10, 0)");
         }
 
-        // Productos
-        int productosCount = db.ExecuteScalar<int>("SELECT COUNT(*) FROM PRODUCTO");
+        // 8 productos (Cafe desbloqueado por defecto)
+        int productosCount = db.ExecuteScalar<int>("SELECT COUNT(*) FROM PRODUCTOS");
         if (productosCount == 0)
         {
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Zumo', 6, 'Bebida', 'Cafetera', 3)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Te', 4, 'Bebida', 'Cafetera', 2)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Cafe', 5, 'Bebida', 'Cafetera', 3)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Latte', 8, 'Bebida', 'Cafetera', 5)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Capuccino', 7, 'Bebida', 'Cafetera', 4)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Croissant', 6, 'Comida', 'Cocina', 4)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Tortitas', 9, 'Comida', 'Cocina', 6)");
-            db.Execute("INSERT INTO PRODUCTO (nombre, precio, tipo, origen, cooldown) VALUES ('Donut', 5, 'Comida', 'Cocina', 3)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Cafe', 'Bebida', 5, 'Cafetera', 3, 0, 1)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Te', 'Bebida', 4, 'Cafetera', 2, 20, 0)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Zumo', 'Bebida', 6, 'Cafetera', 3, 30, 0)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Latte', 'Bebida', 8, 'Cafetera', 5, 50, 0)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Capuccino', 'Bebida', 7, 'Cafetera', 4, 40, 0)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Croissant', 'Comida', 6, 'Cocina', 4, 35, 0)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Tortitas', 'Comida', 9, 'Cocina', 6, 60, 0)");
+            db.Execute("INSERT INTO PRODUCTOS (nombre, Tipo, Precio, Origen, Cooldown, Coste_Desbloqueo, Desbloqueado) VALUES ('Donut', 'Comida', 5, 'Cocina', 3, 25, 0)");
         }
 
-        // Minijuegos
+        // 6 minijuegos con sus tipos (salvacion o recado)
         int minijuegosCount = db.ExecuteScalar<int>("SELECT COUNT(*) FROM MINIJUEGO");
         if (minijuegosCount == 0)
         {
-            db.Execute("INSERT INTO MINIJUEGO (nombre, dificultad, recompensa) VALUES ('Caza Ratones', 'Variable', 20)");
-            db.Execute("INSERT INTO MINIJUEGO (nombre, dificultad, recompensa) VALUES ('Memory Tech', 'Media', 30)");
-            db.Execute("INSERT INTO MINIJUEGO (nombre, dificultad, recompensa) VALUES ('Atrapar Productos', 'Media', 25)");
-            db.Execute("INSERT INTO MINIJUEGO (nombre, dificultad, recompensa) VALUES ('Dados Davy Jones', 'Alta', 0)");
-            db.Execute("INSERT INTO MINIJUEGO (nombre, dificultad, recompensa) VALUES ('Completa el Codigo', 'Media', 100)");
-            db.Execute("INSERT INTO MINIJUEGO (nombre, dificultad, recompensa) VALUES ('BuscaBugs', 'Alta', 50)");
+            db.Execute("INSERT INTO MINIJUEGO (nombre) VALUES ('Caza Ratones')");
+            db.Execute("INSERT INTO MINIJUEGO (nombre) VALUES ('Adivina la tegnologia')");
+            db.Execute("INSERT INTO MINIJUEGO (nombre) VALUES ('Dados de Davy Jones')");
+            db.Execute("INSERT INTO MINIJUEGO (nombre) VALUES ('Atrapa los helados')");
+            db.Execute("INSERT INTO MINIJUEGO (nombre) VALUES ('BuscaBugs')");
+            db.Execute("INSERT INTO MINIJUEGO (nombre) VALUES ('¿Quien quiere ser programador?')");
+
+            // Minijuegos de salvacion: cada uno desbloquea un gato
+            db.Execute("INSERT INTO MJ_SALVACION (Id_Minijuego, Id_Gato) VALUES (1, 1)");
+            db.Execute("INSERT INTO MJ_SALVACION (Id_Minijuego, Id_Gato) VALUES (3, 2)");
+            db.Execute("INSERT INTO MJ_SALVACION (Id_Minijuego, Id_Gato) VALUES (5, 3)");
+
+            // Minijuegos de recado: cada uno da monedas
+            db.Execute("INSERT INTO MJ_RECADO (Id_Minijuego, Monedas) VALUES (2, 30)");
+            db.Execute("INSERT INTO MJ_RECADO (Id_Minijuego, Monedas) VALUES (4, 25)");
         }
     }
 
-    // Métodos públicos
-    public void RegistrarPedido(string nombreProducto)
+    // Registra un pedido completado o fallido en la tabla PEDIDOS
+    public void RegistrarPedido(string nombreProducto, int importe, bool completado)
     {
-        int idProducto = db.ExecuteScalar<int>("SELECT id FROM PRODUCTO WHERE nombre = ?", nombreProducto);
-        if (idProducto > 0)
-            db.Execute("INSERT INTO PEDIDO (id_jugador, id_producto, completado) VALUES (1, ?, 1)", idProducto);
+        int idProd = db.ExecuteScalar<int>("SELECT Id_Prod FROM PRODUCTOS WHERE nombre = ?", nombreProducto);
+        if (idProd > 0)
+            db.Execute("INSERT INTO PEDIDOS (Id_Prod, completado, importe) VALUES (?, ?, ?)",
+                idProd, completado ? 1 : 0, importe);
     }
 
-    public void RegistrarPartidaMinijuego(string nombreMinijuego, int puntuacion)
+    // Registra una partida de minijuego en la tabla JUEGA
+    public void RegistrarPartidaMinijuego(string nombreMinijuego, int puntuacion, bool ganado)
     {
-        int idMinijuego = db.ExecuteScalar<int>("SELECT id FROM MINIJUEGO WHERE nombre = ?", nombreMinijuego);
+        int idMinijuego = db.ExecuteScalar<int>("SELECT Id_Minijuego FROM MINIJUEGO WHERE nombre = ?", nombreMinijuego);
         if (idMinijuego > 0)
-            db.Execute("INSERT INTO PARTIDA_MINIJUEGO (id_jugador, id_minijuego, puntuacion) VALUES (1, ?, ?)", idMinijuego, puntuacion);
+            db.Execute("INSERT OR REPLACE INTO JUEGA (Id_Jugador, Id_Minijuego, puntuacion, ganado) VALUES (1, ?, ?, ?)",
+                idMinijuego, puntuacion, ganado ? 1 : 0);
     }
 
+    // Actualiza el dinero del jugador en la tabla JUGADOR
     public void ActualizarDineroJugador(int dinero)
     {
-        db.Execute("UPDATE JUGADOR SET dinero = ? WHERE id = 1", dinero);
+        db.Execute("UPDATE JUGADOR SET Dinero = ? WHERE Id_Jugador = 1", dinero);
     }
 
-    public void GuardarGatoSalvado(int idGato, float felicidad)
+    // Marca un gato como salvado en la tabla GATO
+    public void GuardarGatoSalvado(int idGato)
     {
-        int existe = db.ExecuteScalar<int>("SELECT COUNT(*) FROM GATO_JUGADOR WHERE id_jugador = 1 AND id_gato = ?", idGato);
-        if (existe == 0)
-            db.Execute("INSERT INTO GATO_JUGADOR (id_jugador, id_gato, esta_salvado, felicidad) VALUES (1, ?, 1, ?)", idGato, felicidad);
-        else
-            db.Execute("UPDATE GATO_JUGADOR SET esta_salvado = 1, felicidad = ? WHERE id_jugador = 1 AND id_gato = ?", felicidad, idGato);
+        db.Execute("UPDATE GATO SET Salvado = 1 WHERE Id_Gato = ?", idGato);
     }
 
-    void OnDestroy()
-    {
-        db?.Close();
-    }
+    // Cierra la conexion a la BBDD al destruir el objeto
+    void OnDestroy() { db?.Close(); }
 }

@@ -4,45 +4,56 @@ using TMPro;
 using System.Collections;
 using UnityEngine.SceneManagement;
 
+// Gestiona el minijuego Atrapar Productos
+// Caen productos desde arriba y el jugador los atrapa con una bandeja
+// Easter egg: si atrapa un cigarro, le restan puntos
 public class GestorAtrapar : MonoBehaviour
 {
+    // Productos que caen
     [Header("Productos")]
     [SerializeField] private GameObject prefabProducto;
-    [SerializeField] private Sprite[] spritesProductos;
+    [SerializeField] private Sprite[] spritesProductos;   // Sprites de productos buenos
     [SerializeField] private Transform contenedorProductos;
 
+    // Bandeja controlada por el jugador
     [Header("Bandeja")]
     [SerializeField] private RectTransform bandeja;
     [SerializeField] private float velocidadBandeja = 500f;
 
+    // Easter egg del cigarro
     [Header("Easter Egg")]
-    [SerializeField] private Sprite spriteEasterEgg;
+    [SerializeField] private Sprite spriteEasterEgg;       // Sprite del cigarro
     [SerializeField] private int penalizacionEasterEgg = 15;
-    [SerializeField] private float probabilidadEasterEgg = 0.15f;
+    [SerializeField] private float probabilidadEasterEgg = 0.15f;  // 15% de probabilidad
 
+    // Configuracion del minijuego
     [Header("Config")]
     [SerializeField] private float tiempoLimite = 45f;
     [SerializeField] private float velocidadCaida = 200f;
     [SerializeField] private float intervaloSpawn = 1.5f;
     [SerializeField] private int recompensaPorProducto = 5;
 
+    // Elementos de la UI
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI textoTiempo;
     [SerializeField] private TextMeshProUGUI textoPuntuacion;
     [SerializeField] private GameObject panelResultado;
     [SerializeField] private TextMeshProUGUI textoResultado;
 
+    // Estado interno
     private float tiempoActual;
     private int puntuacion = 0;
     private bool juegoActivo = false;
     private float limiteIzquierdo;
     private float limiteDerecho;
+    private bool haGanado = false;
 
+    // Espera la cuenta atras antes de empezar
     void Start()
     {
         tiempoActual = tiempoLimite;
         panelResultado?.SetActive(false);
-        juegoActivo = false; // empieza inactivo
+        juegoActivo = false;
 
         CuentaAtras ca = FindObjectOfType<CuentaAtras>();
         if (ca != null)
@@ -51,6 +62,7 @@ public class GestorAtrapar : MonoBehaviour
             IniciarJuego();
     }
 
+    // Calcula los limites de la bandeja y empieza a spawnear productos
     private void IniciarJuego()
     {
         Canvas canvas = FindObjectOfType<Canvas>();
@@ -64,6 +76,7 @@ public class GestorAtrapar : MonoBehaviour
         juegoActivo = true;
     }
 
+    // Mueve la bandeja con flechas o A/D y resta tiempo
     void Update()
     {
         if (!juegoActivo) return;
@@ -83,6 +96,7 @@ public class GestorAtrapar : MonoBehaviour
         if (tiempoActual <= 0) TerminarJuego();
     }
 
+    // Genera productos cada intervaloSpawn segundos
     private IEnumerator SpawnProductos()
     {
         yield return new WaitForSeconds(1f);
@@ -93,6 +107,7 @@ public class GestorAtrapar : MonoBehaviour
         }
     }
 
+    // Instancia un producto en posicion aleatoria (puede ser el easter egg)
     private void SpawnProducto()
     {
         if (prefabProducto == null || spritesProductos.Length == 0) return;
@@ -109,6 +124,7 @@ public class GestorAtrapar : MonoBehaviour
             alturaCanvas / 2 + 50
         );
 
+        // Decidir si es un producto bueno o el easter egg
         bool esMalo = Random.value < probabilidadEasterEgg && spriteEasterEgg != null;
         Image img = prod.GetComponent<Image>();
         if (img != null)
@@ -119,6 +135,7 @@ public class GestorAtrapar : MonoBehaviour
         pc.Inicializar(velocidadCaida, bandeja, alturaCanvas, this, esMalo, penalizacionEasterEgg);
     }
 
+    // Llamado por ProductoCayendo al atrapar un producto bueno
     public void ProductoAtrapado()
     {
         puntuacion += recompensaPorProducto;
@@ -126,28 +143,36 @@ public class GestorAtrapar : MonoBehaviour
             textoPuntuacion.text = "Puntos: " + puntuacion;
     }
 
+    // Llamado por ProductoCayendo al atrapar el easter egg (cigarro)
     public void ProductoMalo(int penalizacion)
     {
         puntuacion = Mathf.Max(0, puntuacion - penalizacion);
         if (textoPuntuacion != null)
             textoPuntuacion.text = "Puntos: " + puntuacion;
-        GestorDialogos.Instance?.MostrarDialogo("¡Eso no se sirve en un café!");
     }
 
+    // Termina el juego al acabarse el tiempo
     private void TerminarJuego()
     {
         juegoActivo = false;
         panelResultado?.SetActive(true);
-        GestorMinijuegos.Instance?.MinijuegoCompletado(); 
-        GestorMinijuegos.Instance?.MinijuegoGanado();     
-        GameManager.Instance?.AnadirDinero(puntuacion);
+        haGanado = true;
+        GestorMinijuegos.Instance?.MinijuegoCompletado();
+        GestorMinijuegos.Instance?.MinijuegoGanado();
         if (textoResultado != null)
-            textoResultado.text = "¡Tiempo!\n+" + puntuacion + " monedas";
-        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Atrapar Productos", puntuacion);
+            textoResultado.text = "¡Tiempo!\n+" + puntuacion + " puntos";
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Atrapar Productos", puntuacion, true);
     }
 
+    // Guarda monedas pendientes y vuelve a la cafeteria
     public void Volver()
     {
+        if (haGanado)
+        {
+            int pendientes = PlayerPrefs.GetInt("Monedas_Pendientes", 0);
+            PlayerPrefs.SetInt("Monedas_Pendientes", pendientes + puntuacion);
+            PlayerPrefs.Save();
+        }
         SceneManager.LoadScene("CafeScene");
     }
 }

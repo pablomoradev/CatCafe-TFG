@@ -1,0 +1,53 @@
+=============================================================
+  Cat Cafe — Créditos y atribuciones
+  © 2026 Pablo Mora López
+  Licencia del código fuente: MIT (ver LICENSE.txt)
+==============================================================
+ 
+MOTOR DE JUEGO
+  Unity 2022.3 LTS — Unity Technologies
+  https://unity.com
+ 
+PLUGINS Y LIBRERÍAS
+  sqlite-net — Frank A. Krueger (praeclarum)
+  Licencia: MIT
+  https://github.com/praeclarum/sqlite-net
+ 
+  TextMeshPro — Unity Technologies
+  Incluido en Unity, sin coste adicional
+ 
+ASSETS GRÁFICOS (Pixel Art)
+  Los sprites y tilesets utilizados en el juego han sido obtenidos
+  de las siguientes fuentes con licencias compatibles:
+ 
+  itch.io — Free Game Assets (pixel art)
+  Licencias: CC0 / CC-BY según cada asset
+  https://itch.io/game-assets/free/tag-pixel-art
+ 
+  OpenGameArt — Free Game Assets
+  Licencias: CC0 / CC-BY según cada asset
+  https://opengameart.org
+ 
+FUENTES TIPOGRÁFICAS
+  ComicNeue Bold — Craig Rozynski
+  Licencia: SIL Open Font License
+  https://fonts.google.com/specimen/Comic+Neue
+ 
+HERRAMIENTAS DE DESARROLLO
+  Visual Studio Community — Microsoft
+  Git + Git LFS — Software Libre
+  DB Browser for SQLite — Software Libre
+  draw.io (diagrams.net) — Diagramas ERD
+ 
+MÚSICA Y SONIDO
+  Los recursos de audio utilizados han sido obtenidos de fuentes
+  gratuitas con licencias compatibles (CC0 / CC-BY).
+  Se mantiene la atribución original donde sea requerido.
+ 
+==============================================================
+  Desarrollado como Trabajo Fin de Grado
+  Ciclo: Desarrollo de Aplicaciones Multiplataforma (DAM)
+  Centro: Colegio Santa Ana y San Rafael, Madrid
+  Tutor: Alejandro Jiménez Vitoria
+  Curso: 2025-2026
+==============================================================

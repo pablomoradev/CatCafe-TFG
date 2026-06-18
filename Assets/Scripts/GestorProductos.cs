@@ -4,25 +4,34 @@ using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 
+// Gestiona el sistema de productos de la cafeteria
+// Genera los botones de productos, controla el cooldown de preparacion
+// y permite desbloquear productos nuevos con monedas
 public class GestorProductos : MonoBehaviour
 {
     public static GestorProductos Instance { get; private set; }
 
+    // Array con todos los productos del juego (ScriptableObjects)
     [Header("Productos")]
     [SerializeField] private DatosProducto[] todosLosProductos;
 
+    // Paneles de la cafetera y la cocina
     [Header("Paneles")]
     [SerializeField] private GameObject panelCafetera;
     [SerializeField] private GameObject panelCocina;
-    [SerializeField] private Transform contenedorCafetera;
-    [SerializeField] private Transform contenedorCocina;
+    [SerializeField] private Transform contenedorCafetera;  // Donde se instancian los botones de bebidas
+    [SerializeField] private Transform contenedorCocina;    // Donde se instancian los botones de comida
 
+    // Prefab del boton de producto y fondo oscuro del panel
     [Header("Prefab")]
     [SerializeField] private GameObject prefabBotonProducto;
+    [SerializeField] private GameObject fondoOscuro;
 
+    // Cooldowns activos y productos listos para servir
     private Dictionary<DatosProducto, Coroutine> cooldownsActivos = new();
     private List<DatosProducto> productosListos = new List<DatosProducto>();
 
+    // Clave base para guardar el desbloqueo en PlayerPrefs
     private const string KEY_DESBLOQUEADO = "Producto_";
 
     void Awake() { Instance = this; }
@@ -35,16 +44,20 @@ public class GestorProductos : MonoBehaviour
         panelCocina?.SetActive(false);
     }
 
+    // Comprueba si un producto esta desbloqueado (coste 0 = desbloqueado por defecto)
     public bool EstaDesbloqueado(DatosProducto p)
     {
         if (p.costeDesbloqueo == 0) return true;
         return PlayerPrefs.GetInt(KEY_DESBLOQUEADO + p.nombreProducto, 0) == 1;
     }
 
+    // Genera los botones de productos en el contenedor indicado
+    // Los desbloqueados muestran precio normal, los bloqueados aparecen oscurecidos
     private void GenerarBotones(Transform contenedor, OrigenProducto origen)
     {
         if (contenedor == null || prefabBotonProducto == null) return;
 
+        // Limpiar botones anteriores
         foreach (Transform hijo in contenedor)
             Destroy(hijo.gameObject);
 
@@ -55,12 +68,15 @@ public class GestorProductos : MonoBehaviour
             GameObject btn = Instantiate(prefabBotonProducto, contenedor);
             bool desbloqueado = EstaDesbloqueado(p);
 
+            // Nombre del producto
             btn.transform.Find("nombre")?.GetComponent<TextMeshProUGUI>()
                 ?.SetText(p.nombreProducto);
 
+            // Precio o coste de desbloqueo
             btn.transform.Find("precio")?.GetComponent<TextMeshProUGUI>()
                 ?.SetText(desbloqueado ? p.precio + " monedas" : "🔒 " + p.costeDesbloqueo + " monedas");
 
+            // Icono del producto (oscurecido si esta bloqueado)
             Image icono = btn.transform.Find("icono")?.GetComponent<Image>();
             if (icono != null && p.iconoProducto != null)
             {
@@ -82,6 +98,7 @@ public class GestorProductos : MonoBehaviour
         }
     }
 
+    // Intenta desbloquear un producto gastando monedas
     private void IntentarDesbloquear(DatosProducto p)
     {
         if (!GameManager.Instance.TieneSuficiente(p.costeDesbloqueo))
@@ -93,28 +110,37 @@ public class GestorProductos : MonoBehaviour
         PlayerPrefs.SetInt(KEY_DESBLOQUEADO + p.nombreProducto, 1);
         PlayerPrefs.Save();
         GestorDialogos.Instance?.MostrarDialogo("¡" + p.nombreProducto + " desbloqueado!");
+        p.estaDesbloqueado = true;
+        // Regenerar botones para actualizar la UI
         GenerarBotones(contenedorCafetera, OrigenProducto.Cafetera);
         GenerarBotones(contenedorCocina, OrigenProducto.Cocina);
     }
 
+    // Abre el panel de la cafetera (bebidas)
     public void AbrirCafetera()
     {
         panelCafetera?.SetActive(true);
         panelCocina?.SetActive(false);
+        fondoOscuro?.SetActive(true);
     }
 
+    // Abre el panel de la cocina (comida)
     public void AbrirCocina()
     {
         panelCocina?.SetActive(true);
         panelCafetera?.SetActive(false);
+        fondoOscuro?.SetActive(true);
     }
 
+    // Cierra todos los paneles de productos
     public void CerrarPaneles()
     {
         panelCafetera?.SetActive(false);
         panelCocina?.SetActive(false);
+        fondoOscuro?.SetActive(false);
     }
 
+    // Selecciona un producto para preparar e inicia el cooldown
     private void SeleccionarProducto(DatosProducto producto, Button boton, Slider barra)
     {
         if (cooldownsActivos.ContainsKey(producto))
@@ -129,6 +155,8 @@ public class GestorProductos : MonoBehaviour
         cooldownsActivos[producto] = c;
     }
 
+    // Ejecuta el cooldown de preparacion con barra animada
+    // Al terminar, anade el producto a la lista de listos
     private IEnumerator EjecutarCooldown(DatosProducto producto, Button boton, Slider barra)
     {
         if (boton != null) boton.interactable = false;
@@ -150,14 +178,16 @@ public class GestorProductos : MonoBehaviour
         GestorDialogos.Instance?.MostrarDialogo("¡" + producto.nombreProducto + " listo! Llévalo a la mesa.");
     }
 
-    public DatosProducto ObtenerProductoPreparado()
+    // Devuelve un producto preparado que coincida con el pedido
+    public DatosProducto ObtenerProductoPreparado(DatosProducto pedido = null)
     {
-        return productosListos.Count > 0 ? productosListos[0] : null;
+        if (pedido == null) return productosListos.Count > 0 ? productosListos[0] : null;
+        return productosListos.Find(p => p == pedido);
     }
-
-    public void LimpiarProductoPreparado()
+        
+    // Elimina un producto de la lista de listos tras servirlo
+    public void LimpiarProductoPreparado(DatosProducto producto)
     {
-        if (productosListos.Count > 0)
-            productosListos.RemoveAt(0);
+        productosListos.Remove(producto);
     }
 }

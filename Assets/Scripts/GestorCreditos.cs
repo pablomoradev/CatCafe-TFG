@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using System.Collections;
 using UnityEngine.SceneManagement;
 
+// Gestiona la escena de creditos finales
+// Los creditos suben con scroll automatico y se puede saltar con un boton
 public class GestorCreditos : MonoBehaviour
 {
     [Header("Creditos")]
@@ -22,34 +23,35 @@ public class GestorCreditos : MonoBehaviour
 
     void Start()
     {
+        // Reproducir musica de creditos
         if (audioSource != null && musicaCreditos != null)
         {
             audioSource.clip = musicaCreditos;
             audioSource.Play();
         }
 
+        // Posicionar los creditos debajo de la pantalla
         Canvas canvas = FindObjectOfType<Canvas>();
         float alturaCanvas = canvas.GetComponent<RectTransform>().rect.height;
-
         contenedorCreditos.anchoredPosition = new Vector2(0, -alturaCanvas);
         posicionFinal = contenedorCreditos.rect.height + alturaCanvas;
 
         botonSaltar?.onClick.AddListener(Saltar);
-
         StartCoroutine(EsperarFinMusica());
     }
 
+    // Mueve los creditos hacia arriba cada frame
     void Update()
     {
         if (terminado) return;
-
         contenedorCreditos.anchoredPosition += Vector2.up * velocidadScroll * Time.deltaTime;
 
-        // Solo termina cuando acabe la música, no cuando llegue arriba
+        // Termina cuando acabe el scroll y la musica
         if (contenedorCreditos.anchoredPosition.y >= posicionFinal && !audioSource.isPlaying)
             VolverAlMenu();
     }
 
+    // Seguridad: volver al menu despues de 220 segundos aunque no termine el scroll
     private IEnumerator EsperarFinMusica()
     {
         yield return new WaitForSeconds(220f);
@@ -63,8 +65,6 @@ public class GestorCreditos : MonoBehaviour
         SceneManager.LoadScene("MenuInicio");
     }
 
-    public void Saltar()
-    {
-        VolverAlMenu();
-    }
+    // Boton para saltar los creditos
+    public void Saltar() { VolverAlMenu(); }
 }

@@ -1,33 +1,38 @@
 using UnityEngine;
 
+// Datos de un anuncio configurable mediante ScriptableObject.
 [CreateAssetMenu(fileName = "NuevoAnuncio", menuName = "CafeteriGatos/Anuncio")]
 public class DatosAnuncio : ScriptableObject
 {
     [Header("Contenido")]
-    public string titulo;
+    public string titulo;          // Título del anuncio.
+
     [TextArea(2, 4)]
-    public string descripcion;
-    public Sprite icono;
+    public string descripcion;     // Descripción mostrada al jugador.
+
+    public Sprite icono;           // Icono representativo.
 
     [Header("Tipo")]
-    public TipoAnuncio tipo;
+    public TipoAnuncio tipo;       // Categoría del anuncio.
 
     [Header("Coste")]
-    public int coste;          
-    public bool estaDesbloqueado;
+    public int coste;              // Precio para desbloquearlo.
+    public bool estaDesbloqueado;  // Indica si ya está disponible.
 
     [Header("Efecto")]
-    public EfectoAnuncio efecto;
-    public float valorEfecto;   
+    public EfectoAnuncio efecto;   // Efecto que aplica.
+    public float valorEfecto;      // Intensidad del efecto.
 }
 
+// Tipos de anuncios disponibles.
 public enum TipoAnuncio
 {
-    Mejora,    
-    Evento,     
-    Info        
+    Mejora,    // Mejora permanente.
+    Evento,    // Evento temporal.
+    Info       // Información o consejo.
 }
 
+// Efectos que puede producir un anuncio.
 public enum EfectoAnuncio
 {
     Ninguno,

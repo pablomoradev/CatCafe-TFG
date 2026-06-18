@@ -1,10 +1,14 @@
 using System.Collections;
 using UnityEngine;
 
+// Gestiona el tutorial interactivo de la cafeteria
+// Solo se muestra la primera vez que el jugador abre el juego
+// Guia al jugador por las zonas principales: mostrador, mesas y tablon
 public class GestorTutorial : MonoBehaviour
 {
     public static GestorTutorial Instance { get; private set; }
 
+    // Zonas que se resaltan durante el tutorial
     [Header("Zonas clicables del tutorial")]
     [SerializeField] private ZonaClicable zonaMostrador;
     [SerializeField] private ZonaClicable zonaMesa1;
@@ -17,6 +21,7 @@ public class GestorTutorial : MonoBehaviour
     private int pasoActual = 0;
     private ZonaClicable zonaResaltadaActual;
 
+    // Dialogos de cada paso del tutorial
     private string[][] dialogosPorPaso = new string[][]
     {
         new string[] {
@@ -49,12 +54,14 @@ public class GestorTutorial : MonoBehaviour
         Instance = this;
     }
 
+    // Solo inicia el tutorial si no se ha visto antes
     private void Start()
     {
         if (!PlayerPrefs.HasKey("TutorialVisto"))
             IniciarTutorial();
     }
 
+    // Desactiva los clientes durante el tutorial y empieza por el paso 0
     private void IniciarTutorial()
     {
         pasoActual = 0;
@@ -62,33 +69,23 @@ public class GestorTutorial : MonoBehaviour
         MostrarPaso(pasoActual);
     }
 
+    // Muestra el dialogo y resalta la zona correspondiente a cada paso
     private void MostrarPaso(int paso)
     {
         QuitarResaltado();
 
         switch (paso)
         {
-            case 0:
-                MostrarDialogoYResaltar(dialogosPorPaso[0], null);
-                break;
-            case 1:
-                MostrarDialogoYResaltar(dialogosPorPaso[1], zonaMostrador);
-                break;
-            case 2:
-                MostrarDialogoYResaltar(dialogosPorPaso[2], zonaMesa1);
-                break;
-            case 3:
-                MostrarDialogoYResaltar(dialogosPorPaso[3], zonaTablon);
-                break;
-            case 4:
-                MostrarDialogoYResaltar(dialogosPorPaso[4], null);
-                break;
-            default:
-                FinalizarTutorial();
-                break;
+            case 0: MostrarDialogoYResaltar(dialogosPorPaso[0], null); break;
+            case 1: MostrarDialogoYResaltar(dialogosPorPaso[1], zonaMostrador); break;
+            case 2: MostrarDialogoYResaltar(dialogosPorPaso[2], zonaMesa1); break;
+            case 3: MostrarDialogoYResaltar(dialogosPorPaso[3], zonaTablon); break;
+            case 4: MostrarDialogoYResaltar(dialogosPorPaso[4], null); break;
+            default: FinalizarTutorial(); break;
         }
     }
 
+    // Muestra el dialogo y resalta la zona indicada
     private void MostrarDialogoYResaltar(string[] lineas, ZonaClicable zona)
     {
         if (zona != null)
@@ -101,6 +98,7 @@ public class GestorTutorial : MonoBehaviour
         StartCoroutine(EsperarDialogo());
     }
 
+    // Espera a que el jugador cierre el dialogo y avanza al siguiente paso
     private IEnumerator EsperarDialogo()
     {
         yield return new WaitForSeconds(0.5f);
@@ -115,11 +113,11 @@ public class GestorTutorial : MonoBehaviour
         return GestorDialogos.Instance.EstaActivo;
     }
 
+    // Cambia el color de la zona para resaltarla
     private void ResaltarZona(ZonaClicable zona, bool activar)
     {
         SpriteRenderer sr = zona.GetComponent<SpriteRenderer>();
-        if (sr != null)
-            sr.color = activar ? colorResaltado : Color.white;
+        if (sr != null) sr.color = activar ? colorResaltado : Color.white;
     }
 
     private void QuitarResaltado()
@@ -131,6 +129,7 @@ public class GestorTutorial : MonoBehaviour
         }
     }
 
+    // Marca el tutorial como visto y reactiva los clientes
     private void FinalizarTutorial()
     {
         QuitarResaltado();

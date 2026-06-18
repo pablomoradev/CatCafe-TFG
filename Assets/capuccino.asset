@@ -16,6 +16,7 @@ MonoBehaviour:
   iconoProducto: {fileID: 21300000, guid: 09260f7252c6e314290ffe91fcc4e531, type: 3}
   precio: 7
   costeDesbloqueo: 18
+  estaDesbloqueado: 0
   tipo: 0
   origen: 0
   cooldown: 4

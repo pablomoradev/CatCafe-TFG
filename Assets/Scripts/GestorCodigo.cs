@@ -5,28 +5,34 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
+// Gestiona el minijuego Quiz de Java
+// Muestra fragmentos de codigo con un hueco y 3 opciones para completarlo
+// El jugador gana puntos por cada respuesta correcta
 public class GestorCodigo : MonoBehaviour
 {
+    // Elementos de la UI
     [Header("UI")]
-    [SerializeField] private TextMeshProUGUI textoCodigoArriba;
-    [SerializeField] private TextMeshProUGUI textoCodigoAbajo;
+    [SerializeField] private TextMeshProUGUI textoCodigoArriba;  // Codigo antes del hueco
+    [SerializeField] private TextMeshProUGUI textoCodigoAbajo;   // Codigo despues del hueco
     [SerializeField] private TextMeshProUGUI textoPregunta;
-    [SerializeField] private Button[] botonesOpciones; // 3 botones
+    [SerializeField] private Button[] botonesOpciones;            // 3 botones con las opciones
     [SerializeField] private TextMeshProUGUI textoPuntuacion;
     [SerializeField] private TextMeshProUGUI textoTiempo;
     [SerializeField] private GameObject panelResultado;
     [SerializeField] private TextMeshProUGUI textoFinal;
 
+    // Configuracion
     [Header("Config")]
     [SerializeField] private float tiempoLimite = 60f;
     [SerializeField] private int recompensaPorAcierto = 10;
 
+    // Estado interno
     private float tiempoActual;
     private int puntuacion = 0;
     private int preguntaActual = 0;
     private bool juegoActivo = false;
 
-    // Preguntas: codigo1, codigo2, respuesta correcta, opciones
+    // Lista de preguntas: codigo arriba, codigo abajo, respuesta correcta, opciones
     private List<(string arriba, string abajo, string correcta, string[] opciones)> preguntas = new List<(string, string, string, string[])>
     {
         (
@@ -42,10 +48,10 @@ public class GestorCodigo : MonoBehaviour
             new string[] { "new int[]{1, 2, 3}", "int[1, 2, 3]", "{1, 2, 3}[]" }
         ),
         (
-            "for (int i = 0; ",
-            "; i++) {",
-            "i < 10",
-            new string[] { "i < 10", "i = 10", "i > 10" }
+            "switch (dia) {\n    case 1:",
+            "\n    default: break;\n}",
+            "    System.out.println(\"Lunes\"); break;",
+            new string[] { "    System.out.println(\"Lunes\"); break;", "    print(\"Lunes\");", "    return \"Lunes\";" }
         ),
         (
             "String nombre = ",
@@ -91,6 +97,7 @@ public class GestorCodigo : MonoBehaviour
         ),
     };
 
+    // Espera la cuenta atras antes de empezar
     void Start()
     {
         tiempoActual = tiempoLimite;
@@ -103,6 +110,7 @@ public class GestorCodigo : MonoBehaviour
             IniciarJuego();
     }
 
+    // Resta tiempo cada frame
     void Update()
     {
         if (!juegoActivo) return;
@@ -118,8 +126,10 @@ public class GestorCodigo : MonoBehaviour
         MostrarPregunta();
     }
 
+    // Muestra la pregunta actual con el codigo y las 3 opciones mezcladas
     private void MostrarPregunta()
     {
+        // Si ya no quedan preguntas, termina el juego
         if (preguntaActual >= preguntas.Count)
         {
             TerminarJuego();
@@ -132,7 +142,7 @@ public class GestorCodigo : MonoBehaviour
         textoCodigoAbajo?.SetText(p.abajo);
         textoPregunta?.SetText("¿Qué va en el hueco?");
 
-        // Mezclar opciones
+        // Mezclar las opciones aleatoriamente
         List<string> opcMezcladas = new List<string>(p.opciones);
         for (int i = opcMezcladas.Count - 1; i > 0; i--)
         {
@@ -142,6 +152,7 @@ public class GestorCodigo : MonoBehaviour
             opcMezcladas[j] = temp;
         }
 
+        // Asignar cada opcion a su boton
         for (int i = 0; i < botonesOpciones.Length; i++)
         {
             if (i >= opcMezcladas.Count) break;
@@ -153,6 +164,7 @@ public class GestorCodigo : MonoBehaviour
         }
     }
 
+    // Comprueba si la opcion seleccionada es correcta y pasa a la siguiente
     private void ResponderPregunta(string opcion, string correcta)
     {
         if (opcion == correcta)
@@ -171,30 +183,34 @@ public class GestorCodigo : MonoBehaviour
         StartCoroutine(SiguientePregunta());
     }
 
+    // Espera 1.5 segundos antes de mostrar la siguiente pregunta
     private IEnumerator SiguientePregunta()
     {
         yield return new WaitForSeconds(1.5f);
         MostrarPregunta();
     }
 
+    // Termina el juego. Si completo todas las preguntas, avanza en el flujo de minijuegos
     private void TerminarJuego()
     {
         juegoActivo = false;
         panelResultado?.SetActive(true);
 
-        bool completo = preguntaActual >= preguntas.Count; 
+        // Solo avanza si respondio todas las preguntas (no por tiempo)
+        bool completo = preguntaActual >= preguntas.Count;
         if (completo)
         {
-            GestorMinijuegos.Instance?.MinijuegoCompletado(); 
-            GestorMinijuegos.Instance?.MinijuegoGanado();     
+            GestorMinijuegos.Instance?.MinijuegoCompletado();
+            GestorMinijuegos.Instance?.MinijuegoGanado();
         }
 
         GameManager.Instance?.AnadirDinero(puntuacion);
         if (textoFinal != null)
             textoFinal.text = "Fin del juego!\n+" + puntuacion + " monedas";
-        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Completa el Codigo", puntuacion);
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Quiz Java", puntuacion, preguntaActual >= preguntas.Count);
     }
 
+    // Vuelve a la cafeteria
     public void Volver()
     {
         SceneManager.LoadScene("CafeScene");

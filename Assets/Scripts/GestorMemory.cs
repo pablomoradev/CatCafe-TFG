@@ -5,14 +5,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
+// Gestiona el minijuego Memory Tech
+// El jugador debe emparejar cartas con logos de tecnologias antes de que se acabe el tiempo
 public class GestorMemory : MonoBehaviour
 {
+    // Cartas del tablero
     [Header("Cartas")]
     [SerializeField] private GameObject prefabCarta;
     [SerializeField] private Transform contenedorCartas;
-    [SerializeField] private Sprite[] iconosProductos; // arrastra los sprites de cafe, latte, etc
-    [SerializeField] private Sprite reversoCarta;
+    [SerializeField] private Sprite[] iconosProductos;  // Sprites de las tecnologias (Java, C#, SQL, etc.)
+    [SerializeField] private Sprite reversoCarta;        // Sprite del dorso de la carta
 
+    // Elementos de la UI
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI textoTiempo;
     [SerializeField] private TextMeshProUGUI textoPareja;
@@ -20,17 +24,21 @@ public class GestorMemory : MonoBehaviour
     [SerializeField] private TextMeshProUGUI textoResultado;
     [SerializeField] private Button botonVolver;
 
+    // Configuracion
     [Header("Config")]
     [SerializeField] private float tiempoLimite = 60f;
     [SerializeField] private int recompensaGanar = 30;
 
-    private List<CartaMemory> cartasVolteadas = new List<CartaMemory>();
+    // Estado interno
+    private List<CartaMemory> cartasVolteadas = new List<CartaMemory>(); // Cartas actualmente boca arriba
     private int parejasEncontradas = 0;
     private int totalParejas;
     private float tiempoActual;
     private bool juegoActivo = false;
-    private bool comprobando = false;
+    private bool comprobando = false;  // True mientras se comprueba si dos cartas son pareja
+    private bool haGanado = false;
 
+    // Espera la cuenta atras antes de empezar
     void Start()
     {
         tiempoActual = tiempoLimite;
@@ -51,6 +59,7 @@ public class GestorMemory : MonoBehaviour
         juegoActivo = true;
     }
 
+    // Resta tiempo cada frame
     void Update()
     {
         if (!juegoActivo) return;
@@ -60,9 +69,10 @@ public class GestorMemory : MonoBehaviour
         if (tiempoActual <= 0) TerminarJuego(false);
     }
 
+    // Crea el tablero duplicando los sprites y mezclando las cartas
     private void GenerarTablero()
     {
-        // Crear pares de iconos
+        // Duplicar cada icono para tener parejas
         List<Sprite> sprites = new List<Sprite>();
         foreach (Sprite s in iconosProductos)
         {
@@ -70,7 +80,7 @@ public class GestorMemory : MonoBehaviour
             sprites.Add(s);
         }
 
-        // Mezclar
+        // Mezclar aleatoriamente (algoritmo Fisher-Yates)
         for (int i = sprites.Count - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
@@ -81,7 +91,7 @@ public class GestorMemory : MonoBehaviour
 
         totalParejas = iconosProductos.Length;
 
-        // Instanciar cartas
+        // Instanciar cada carta con su icono
         for (int i = 0; i < sprites.Count; i++)
         {
             GameObject carta = Instantiate(prefabCarta, contenedorCartas);
@@ -92,19 +102,22 @@ public class GestorMemory : MonoBehaviour
         juegoActivo = true;
     }
 
+    // Llamado por CartaMemory al hacer clic en una carta
     public void CartaSeleccionada(CartaMemory carta)
     {
-        if (comprobando) return;
-        if (cartasVolteadas.Contains(carta)) return;
-        if (cartasVolteadas.Count >= 2) return;
+        if (comprobando) return;                    // No permitir clics mientras se comprueba pareja
+        if (cartasVolteadas.Contains(carta)) return; // No permitir clicar la misma carta
+        if (cartasVolteadas.Count >= 2) return;      // Maximo 2 cartas volteadas a la vez
 
         carta.Voltear(true);
         cartasVolteadas.Add(carta);
 
+        // Si hay 2 cartas volteadas, comprobar si son pareja
         if (cartasVolteadas.Count == 2)
             StartCoroutine(ComprobarPareja());
     }
 
+    // Espera 1 segundo y comprueba si las dos cartas volteadas son pareja
     private IEnumerator ComprobarPareja()
     {
         comprobando = true;
@@ -112,7 +125,7 @@ public class GestorMemory : MonoBehaviour
 
         if (cartasVolteadas[0].Icono == cartasVolteadas[1].Icono)
         {
-            // Pareja encontrada
+            // Son pareja: dejarlas boca arriba
             cartasVolteadas[0].Emparejar();
             cartasVolteadas[1].Emparejar();
             parejasEncontradas++;
@@ -120,11 +133,13 @@ public class GestorMemory : MonoBehaviour
             if (textoPareja != null)
                 textoPareja.text = "Parejas: " + parejasEncontradas + "/" + totalParejas;
 
+            // Si encontro todas las parejas, gana
             if (parejasEncontradas >= totalParejas)
                 TerminarJuego(true);
         }
         else
         {
+            // No son pareja: voltearlas boca abajo
             cartasVolteadas[0].Voltear(false);
             cartasVolteadas[1].Voltear(false);
         }
@@ -133,16 +148,17 @@ public class GestorMemory : MonoBehaviour
         comprobando = false;
     }
 
+    // Termina el juego y notifica al GestorMinijuegos si gano
     private void TerminarJuego(bool gano)
     {
         juegoActivo = false;
         panelResultado?.SetActive(true);
+        haGanado = gano;
 
         if (gano)
         {
             GestorMinijuegos.Instance?.MinijuegoCompletado();
             GestorMinijuegos.Instance?.MinijuegoGanado();
-            GameManager.Instance?.AnadirDinero(recompensaGanar);
             if (textoResultado != null)
                 textoResultado.text = "¡Has ganado!\n+" + recompensaGanar + " monedas";
         }
@@ -151,11 +167,18 @@ public class GestorMemory : MonoBehaviour
             if (textoResultado != null)
                 textoResultado.text = "¡Se acabó el tiempo!";
         }
-        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Memory Tech", parejasEncontradas * 5);
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Memory Tech", parejasEncontradas * 5, gano);
     }
 
+    // Guarda monedas pendientes en PlayerPrefs y vuelve a la cafeteria
     public void Volver()
     {
+        if (haGanado)
+        {
+            int pendientes = PlayerPrefs.GetInt("Monedas_Pendientes", 0);
+            PlayerPrefs.SetInt("Monedas_Pendientes", pendientes + recompensaGanar);
+            PlayerPrefs.Save();
+        }
         SceneManager.LoadScene("CafeScene");
     }
 }

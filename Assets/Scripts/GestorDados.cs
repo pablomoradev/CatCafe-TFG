@@ -2,16 +2,22 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
+// Gestiona el minijuego de Dados contra Davy Jones
+// El jugador y la IA se enfrentan en rondas de dados con apuestas
+// Gana quien llegue a 4 victorias o tenga mas puntos tras 7 rondas
 public class GestorDados : MonoBehaviour
 {
+    // Imagenes de los dados del jugador y la IA
     [Header("Dados")]
     [SerializeField] private Image imagenJugador;
     [SerializeField] private Image imagenIA;
-    [SerializeField] private Sprite[] spritesJugador;
-    [SerializeField] private Sprite[] spritesIA;
+    [SerializeField] private Sprite[] spritesJugador; // Las 6 caras del dado del jugador
+    [SerializeField] private Sprite[] spritesIA;       // Las 6 caras del dado de la IA
 
+    // Elementos de la interfaz
     [Header("UI")]
     [SerializeField] private Button botonTirar;
     [SerializeField] private TextMeshProUGUI textoJugador;
@@ -21,21 +27,25 @@ public class GestorDados : MonoBehaviour
     [SerializeField] private TextMeshProUGUI textoDineroIA;
     [SerializeField] private TextMeshProUGUI textoApuestaActual;
     [SerializeField] private TextMeshProUGUI textoApuestaIA;
+    [SerializeField] private TextMeshProUGUI textoMensaje;
     [SerializeField] private GameObject panelResultado;
     [SerializeField] private TextMeshProUGUI textoFinal;
 
+    // Botones de apuesta
     [Header("Apuestas")]
     [SerializeField] private Button botonApuesta5;
     [SerializeField] private Button botonApuesta10;
     [SerializeField] private Button botonApuesta20;
 
+    // Configuracion
     [Header("Config")]
     [SerializeField] private float duracionAnimacion = 2f;
     [SerializeField] private int dineroInicialJugador = 70;
     [SerializeField] private int dineroInicialIA = 70;
 
-    private int puntosJugador = 0;
-    private int puntosIA = 0;
+    // Estado interno
+    private int puntosJugador = 0;   // Rondas ganadas por el jugador
+    private int puntosIA = 0;        // Rondas ganadas por Davy Jones
     private int ronda = 0;
     private int maxRondas = 7;
     private bool juegoActivo = true;
@@ -44,6 +54,7 @@ public class GestorDados : MonoBehaviour
     private int dineroJugador = 70;
     private int dineroIA = 70;
 
+    // Inicializa la UI y espera la cuenta atras
     void Start()
     {
         dineroJugador = dineroInicialJugador;
@@ -62,6 +73,7 @@ public class GestorDados : MonoBehaviour
         botonApuesta10?.onClick.AddListener(() => SeleccionarApuesta(10));
         botonApuesta20?.onClick.AddListener(() => SeleccionarApuesta(20));
 
+        // Esperar cuenta atras 3-2-1
         CuentaAtras ca = FindObjectOfType<CuentaAtras>();
         if (ca != null)
         {
@@ -71,6 +83,14 @@ public class GestorDados : MonoBehaviour
         }
     }
 
+    // Muestra un mensaje en la UI
+    private void MostrarMensaje(string mensaje)
+    {
+        if (textoMensaje != null)
+            textoMensaje.text = mensaje;
+    }
+
+    // Muestra u oculta botones de apuesta segun el dinero del jugador
     private void MostrarBotonesApuesta(bool mostrar)
     {
         botonApuesta5?.gameObject.SetActive(mostrar && dineroJugador >= 5);
@@ -78,18 +98,20 @@ public class GestorDados : MonoBehaviour
         botonApuesta20?.gameObject.SetActive(mostrar && dineroJugador >= 20);
     }
 
+    // El jugador elige apuesta, la IA elige una aleatoria entre las que puede pagar
     private void SeleccionarApuesta(int cantidad)
     {
         if (dineroJugador < cantidad)
         {
-            GestorDialogos.Instance?.MostrarDialogo("No tienes suficiente reales.");
+            MostrarMensaje("No tienes suficiente reales.");
             return;
         }
 
         apuestaJugador = cantidad;
 
+        // La IA elige aleatoriamente entre las apuestas que puede pagar
         int[] opciones = { 5, 10, 20 };
-        System.Collections.Generic.List<int> posibles = new System.Collections.Generic.List<int>();
+        List<int> posibles = new List<int>();
         foreach (int op in opciones)
             if (dineroIA >= op) posibles.Add(op);
 
@@ -102,6 +124,7 @@ public class GestorDados : MonoBehaviour
         MostrarBotonesApuesta(false);
     }
 
+    // Lanza los dados si hay apuesta seleccionada
     private void TirarDados()
     {
         if (!juegoActivo || apuestaJugador == 0) return;
@@ -109,8 +132,13 @@ public class GestorDados : MonoBehaviour
         StartCoroutine(AnimarDados());
     }
 
+    // Anima los dados, genera resultado sin empates, reparte el bote
+    // y comprueba si alguien se quedo sin dinero o se alcanzo el maximo de rondas
     private IEnumerator AnimarDados()
     {
+        MostrarMensaje("");
+
+        // Animacion: cambiar sprites rapidamente
         float elapsed = 0f;
         while (elapsed < duracionAnimacion)
         {
@@ -122,15 +150,15 @@ public class GestorDados : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
 
-        // Sin empates: repetir hasta que haya ganador
-        int resultadoJugador;
-        int resultadoIA;
+        // Resultado sin empates
+        int resultadoJugador, resultadoIA;
         do
         {
             resultadoJugador = Random.Range(1, 7);
             resultadoIA = Random.Range(1, 7);
         } while (resultadoJugador == resultadoIA);
 
+        // Mostrar resultado final en los dados
         if (imagenJugador != null && spritesJugador.Length >= resultadoJugador)
             imagenJugador.sprite = spritesJugador[resultadoJugador - 1];
         if (imagenIA != null && spritesIA.Length >= resultadoIA)
@@ -140,24 +168,25 @@ public class GestorDados : MonoBehaviour
         textoIA?.SetText(resultadoIA.ToString());
 
         ronda++;
-
         int bote = apuestaJugador + apuestaIA;
 
+        // Repartir bote al ganador de la ronda
         if (resultadoJugador > resultadoIA)
         {
             puntosJugador++;
             dineroJugador += bote;
             dineroIA -= apuestaIA;
-            GestorDialogos.Instance?.MostrarDialogo("Ganaste esta ronda. +" + bote + " reales");
+            MostrarMensaje("Ganaste esta ronda. +" + bote + " reales");
         }
         else
         {
             puntosIA++;
             dineroIA += bote;
             dineroJugador -= apuestaJugador;
-            GestorDialogos.Instance?.MostrarDialogo("Davy Jones gana esta ronda. -" + apuestaJugador + " reales");
+            MostrarMensaje("Davy Jones gana esta ronda. -" + apuestaJugador + " reales");
         }
 
+        // Resetear apuestas
         apuestaJugador = 0;
         apuestaIA = 0;
         textoApuestaActual?.SetText("");
@@ -168,6 +197,7 @@ public class GestorDados : MonoBehaviour
 
         yield return new WaitForSeconds(1f);
 
+        // El jugador se quedo sin dinero → derrota
         if (dineroJugador <= 0)
         {
             OcultarUI();
@@ -175,39 +205,46 @@ public class GestorDados : MonoBehaviour
             textoFinal?.SetText("Te quedaste sin reales grumete de agua dulce.\nDavy Jones se queda con tu corazon.");
             panelResultado?.SetActive(true);
             juegoActivo = false;
+            GestorBBDD.Instance?.RegistrarPartidaMinijuego("Dados Davy Jones", puntosJugador, false);
             yield break;
         }
 
+        // Davy Jones se quedo sin dinero → victoria
         if (dineroIA <= 0)
         {
             OcultarUI();
             int ganado = dineroJugador - dineroInicialJugador;
             GameManager.Instance?.AnadirDinero(ganado);
-            GestorMinijuegos.Instance?.MinijuegoCompletado(); 
-            GestorMinijuegos.Instance?.MinijuegoGanado();     
+            GestorMinijuegos.Instance?.MinijuegoCompletado();
+            GestorMinijuegos.Instance?.MinijuegoGanado();
             textoFinal?.SetText("Davy Jones se quedo sin dinero.\nTe quedas con su corazon. +" + ganado + " reales");
             panelResultado?.SetActive(true);
             juegoActivo = false;
+            GestorBBDD.Instance?.RegistrarPartidaMinijuego("Dados Davy Jones", puntosJugador, puntosJugador > puntosIA);
             yield break;
         }
 
+        // Comprobar si se alcanzo el maximo de rondas o 4 victorias
         if (puntosJugador >= 4 || puntosIA >= 4 || ronda >= maxRondas)
             TerminarJuego();
         else
             MostrarBotonesApuesta(true);
     }
 
+    // Actualiza el marcador de rondas
     private void ActualizarMarcador()
     {
         textoMarcador?.SetText("Davy Jones " + puntosIA + " - " + puntosJugador + " Tu  |  Ronda " + ronda + "/" + maxRondas);
     }
 
+    // Actualiza los textos de dinero
     private void ActualizarDineros()
     {
         textoDineroJugador?.SetText("Tu dinero: " + dineroJugador + " reales");
         textoDineroIA?.SetText("Davy Jones: " + dineroIA + " reales");
     }
 
+    // Oculta toda la UI del juego para mostrar solo el resultado
     private void OcultarUI()
     {
         textoDineroJugador?.gameObject.SetActive(false);
@@ -220,8 +257,11 @@ public class GestorDados : MonoBehaviour
         imagenJugador?.gameObject.SetActive(false);
         imagenIA?.gameObject.SetActive(false);
         botonTirar?.gameObject.SetActive(false);
+        textoMensaje?.gameObject.SetActive(false);
     }
 
+    // Termina el juego por rondas o por 4 victorias
+    // Calcula ganancias/perdidas y notifica al GestorMinijuegos si gano
     private void TerminarJuego()
     {
         juegoActivo = false;
@@ -232,19 +272,22 @@ public class GestorDados : MonoBehaviour
 
         if (puntosJugador > puntosIA)
         {
+            // Victoria: sumar ganancias y avanzar en el flujo
             if (diferencia > 0) GameManager.Instance?.AnadirDinero(diferencia);
-            GestorMinijuegos.Instance?.MinijuegoCompletado(); // ← AÑADIR
-            GestorMinijuegos.Instance?.MinijuegoGanado();     // ← AÑADIR
-            textoFinal?.SetText("Venciste a Davy Jones.\nTe quedas con tu corazon. +" + Mathf.Max(0, diferencia) + " monedas");
+            GestorMinijuegos.Instance?.MinijuegoCompletado();
+            GestorMinijuegos.Instance?.MinijuegoGanado();
+            textoFinal?.SetText("Venciste a Davy Jones.\nTe quedas con su corazon. +" + Mathf.Max(0, diferencia) + " monedas");
         }
         else
         {
+            // Derrota: restar perdidas
             if (diferencia < 0) GameManager.Instance?.GastarDinero(Mathf.Abs(diferencia));
             textoFinal?.SetText("Davy Jones te ha vencido.\nSe queda con tu corazon. -" + Mathf.Abs(Mathf.Min(0, diferencia)) + " monedas");
         }
-        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Dados Davy Jones", puntosJugador);
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("Dados Davy Jones", puntosJugador, puntosJugador > puntosIA);
     }
 
+    // Vuelve a la cafeteria
     public void Volver()
     {
         SceneManager.LoadScene("CafeScene");

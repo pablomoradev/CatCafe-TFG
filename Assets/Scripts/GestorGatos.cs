@@ -1,22 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Gestiona todos los gatos del juego: lista, estado de salvado,
+// tablón, bonus pasivos y activacion en escena
 public class GestorGatos : MonoBehaviour
 {
     public static GestorGatos Instance { get; private set; }
 
+    // Lista con los 3 gatos del juego (ScriptableObjects)
     [Header("Todos los gatos del juego")]
     [SerializeField] private List<DatosGato> todosLosGatos;
 
+    // Prefab del gato que aparece en la cafeteria al ser rescatado
     [Header("Prefab gato salvado")]
     [SerializeField] private GameObject prefabGatoSalvado;
 
+    // Gatos que se muestran actualmente en el tablon
     public List<DatosGato> GatosEnTablon { get; private set; } = new List<DatosGato>();
 
     [Header("Cuántos gatos mostrar a la vez")]
     [SerializeField] private int minGatosTablon = 1;
     [SerializeField] private int maxGatosTablon = 3;
 
+    // Indice del gato activo en la cafeteria (-1 si no hay ninguno)
     private int indexGatoActivo = -1;
 
     private void Awake()
@@ -26,43 +32,28 @@ public class GestorGatos : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    private void OnEnable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnScenaCargada;
-    }
+    private void OnEnable() { UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnScenaCargada; }
+    private void OnDisable() { UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnScenaCargada; }
 
-    private void OnDisable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnScenaCargada;
-    }
+    private void OnScenaCargada(UnityEngine.SceneManagement.Scene escena, UnityEngine.SceneManagement.LoadSceneMode modo) { }
 
-    private void OnScenaCargada(UnityEngine.SceneManagement.Scene escena, UnityEngine.SceneManagement.LoadSceneMode modo)
-    {
-        // El jugador elige el gato desde el panel, no se instancia automáticamente
-    }
-
+    // Rellena GatosEnTablon con el primer gato no salvado del flujo
     public void GenerarGatosTablon()
     {
         GatosEnTablon.Clear();
 
-        List<DatosGato> disponibles = todosLosGatos.FindAll(g => !g.estaSalvado);
-
-        if (disponibles.Count == 0) return;
-
-        int cantidad = Random.Range(minGatosTablon, Mathf.Min(maxGatosTablon, disponibles.Count) + 1);
-
-        for (int i = disponibles.Count - 1; i > 0; i--)
+        int[] indicesGato = { 0, 1, 2 };
+        foreach (int idx in indicesGato)
         {
-            int j = Random.Range(0, i + 1);
-            DatosGato temp = disponibles[i];
-            disponibles[i] = disponibles[j];
-            disponibles[j] = temp;
+            if (idx < todosLosGatos.Count && !todosLosGatos[idx].estaSalvado)
+            {
+                GatosEnTablon.Add(todosLosGatos[idx]);
+                return; // Solo 1 gato a la vez en el tablon
+            }
         }
-
-        for (int i = 0; i < cantidad; i++)
-            GatosEnTablon.Add(disponibles[i]);
     }
 
+    // Marca un gato como salvado, aplica su bonus y muestra dialogo
     public void SalvarGato(DatosGato gato)
     {
         gato.estaSalvado = true;
@@ -77,8 +68,13 @@ public class GestorGatos : MonoBehaviour
                 $"Gasto pasivo: {gato.gastoPorDia} monedas/día"
             });
         }
+
+        // Activar el gato en la escena automaticamente
+        PanelGestorGatos panel = FindObjectOfType<PanelGestorGatos>();
+        panel?.ActivarUltimoGatoSalvado();
     }
 
+    // Aplica el bonus pasivo del gato al sistema correspondiente
     private void AplicarBonus(DatosGato gato)
     {
         switch (gato.tipoBonus)
@@ -92,18 +88,16 @@ public class GestorGatos : MonoBehaviour
             case BonusGato.MasClientesPorHora:
                 GestorClientes.Instance?.ModificarRitmoAparicion(gato.valorBonus);
                 break;
-            case BonusGato.Ninguno:
-            case BonusGato.DescuentoCompras:
-            default:
-                break;
         }
     }
 
+    // Devuelve la lista de gatos salvados
     public List<DatosGato> ObtenerGatosSalvados()
     {
-        return todosLosGatos.FindAll(g => g.estaSalvado);
+        return todosLosGatos.FindAll(g => g != null && g.estaSalvado);
     }
 
+    // Resetea todos los gatos a no salvados (para nueva partida)
     public void ReiniciarGatos()
     {
         foreach (DatosGato gato in todosLosGatos)
@@ -111,35 +105,30 @@ public class GestorGatos : MonoBehaviour
         indexGatoActivo = -1;
     }
 
-    // --- Métodos nuevos para el guardado ---
+    public DatosGato[] ObtenerTodosLosGatos() { return todosLosGatos.ToArray(); }
+    public int ObtenerIndexGatoActivo() { return indexGatoActivo; }
 
-    public DatosGato[] ObtenerTodosLosGatos()
-    {
-        return todosLosGatos.ToArray();
-    }
-
-    public int ObtenerIndexGatoActivo()
-    {
-        return indexGatoActivo;
-    }
-
+    // Establece el gato activo por indice (para cargar partida)
     public void EstablecerGatoActivo(int index)
     {
         if (index < 0 || index >= todosLosGatos.Count) return;
         indexGatoActivo = index;
     }
+
+    // Salva un gato por su indice y lo registra en la BBDD
     public void SalvarGatoPorIndex(int index)
     {
         if (index < 0 || index >= todosLosGatos.Count) return;
         DatosGato gato = todosLosGatos[index];
         if (gato.estaSalvado) return;
         SalvarGato(gato);
-        GestorBBDD.Instance?.GuardarGatoSalvado(index + 1, 100f);
+        GestorBBDD.Instance?.GuardarGatoSalvado(index + 1);
     }
+
+    // Devuelve un gato por su indice
     public DatosGato ObtenerGatoPorIndex(int index)
     {
         if (index < 0 || index >= todosLosGatos.Count) return null;
         return todosLosGatos[index];
     }
-
 }

@@ -4,15 +4,20 @@ using TMPro;
 using System.Collections;
 using UnityEngine.SceneManagement;
 
+// Gestiona el minijuego BuscaBugs (version tematica de Buscaminas)
+// El jugador debe revelar celdas sin tocar bugs en un grid 8x8
+// Clic izquierdo revela, clic derecho marca como posible bug
 public class GestorBuscaBugs : MonoBehaviour
 {
+    // Configuracion del grid
     [Header("Grid")]
     [SerializeField] private Transform contenedorGrid;
     [SerializeField] private GameObject prefabCelda;
     [SerializeField] private int filas = 8;
     [SerializeField] private int columnas = 8;
-    [SerializeField] private int numBugs = 10;
+    [SerializeField] private int numBugs = 10;  // Cantidad de bugs ocultos
 
+    // Elementos de la UI
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI textoBugsRestantes;
     [SerializeField] private TextMeshProUGUI textoTiempo;
@@ -20,12 +25,14 @@ public class GestorBuscaBugs : MonoBehaviour
     [SerializeField] private TextMeshProUGUI textoFinal;
     [SerializeField] private int recompensa = 50;
 
+    // Estado interno
     private CeldaBuscaBugs[,] celdas;
     private bool juegoActivo = false;
-    private float tiempoActual = 0f;
+    private float tiempoActual = 0f;      // Tiempo transcurrido (cuenta hacia arriba)
     private int celdasReveladas = 0;
     private int bugsMarcados = 0;
 
+    // Espera la cuenta atras antes de empezar
     void Start()
     {
         panelResultado?.SetActive(false);
@@ -37,6 +44,7 @@ public class GestorBuscaBugs : MonoBehaviour
             IniciarJuego();
     }
 
+    // Cuenta el tiempo transcurrido
     void Update()
     {
         if (!juegoActivo) return;
@@ -45,6 +53,7 @@ public class GestorBuscaBugs : MonoBehaviour
             textoTiempo.text = "Tiempo: " + Mathf.FloorToInt(tiempoActual) + "s";
     }
 
+    // Genera el grid, coloca bugs y calcula numeros
     private void IniciarJuego()
     {
         GenerarGrid();
@@ -54,12 +63,11 @@ public class GestorBuscaBugs : MonoBehaviour
         ActualizarBugsRestantes();
     }
 
+    // Crea el grid de celdas instanciando el prefab
     private void GenerarGrid()
     {
         celdas = new CeldaBuscaBugs[filas, columnas];
-
         for (int f = 0; f < filas; f++)
-        {
             for (int c = 0; c < columnas; c++)
             {
                 GameObject obj = Instantiate(prefabCelda, contenedorGrid);
@@ -67,9 +75,9 @@ public class GestorBuscaBugs : MonoBehaviour
                 celda.Inicializar(f, c, this);
                 celdas[f, c] = celda;
             }
-        }
     }
 
+    // Coloca los bugs aleatoriamente en el grid
     private void ColocarBugs()
     {
         int colocados = 0;
@@ -85,10 +93,10 @@ public class GestorBuscaBugs : MonoBehaviour
         }
     }
 
+    // Calcula cuantos bugs hay alrededor de cada celda
     private void CalcularNumeros()
     {
         for (int f = 0; f < filas; f++)
-        {
             for (int c = 0; c < columnas; c++)
             {
                 if (celdas[f, c].EsBug) continue;
@@ -102,17 +110,17 @@ public class GestorBuscaBugs : MonoBehaviour
                     }
                 celdas[f, c].BugsAlrededor = count;
             }
-        }
     }
 
+    // Revela una celda. Si es bug, game over. Si no tiene bugs alrededor, revela las vecinas
     public void RevelarCelda(int fila, int col)
     {
         if (!juegoActivo) return;
         CeldaBuscaBugs celda = celdas[fila, col];
 
+        // Si es bug, revela todo y termina
         if (celda.EsBug)
         {
-            // Game over
             RevelarTodo();
             TerminarJuego(false);
             return;
@@ -122,9 +130,9 @@ public class GestorBuscaBugs : MonoBehaviour
         celda.Revelar();
         celdasReveladas++;
 
+        // Si no hay bugs alrededor, revelar celdas vecinas recursivamente
         if (celda.BugsAlrededor == 0)
         {
-            // Revelar celdas vecinas
             for (int df = -1; df <= 1; df++)
                 for (int dc = -1; dc <= 1; dc++)
                 {
@@ -134,11 +142,12 @@ public class GestorBuscaBugs : MonoBehaviour
                 }
         }
 
-        // Comprobar victoria
+        // Victoria: si revelo todas las celdas que no son bug
         if (celdasReveladas == filas * columnas - numBugs)
             TerminarJuego(true);
     }
 
+    // Marca o desmarca una celda como posible bug (clic derecho)
     public void MarcarCelda(int fila, int col)
     {
         if (!juegoActivo) return;
@@ -150,6 +159,7 @@ public class GestorBuscaBugs : MonoBehaviour
         ActualizarBugsRestantes();
     }
 
+    // Revela todas las celdas con bug (al perder)
     private void RevelarTodo()
     {
         for (int f = 0; f < filas; f++)
@@ -158,12 +168,14 @@ public class GestorBuscaBugs : MonoBehaviour
                     celdas[f, c].RevelarBug();
     }
 
+    // Actualiza el contador de bugs restantes
     private void ActualizarBugsRestantes()
     {
         if (textoBugsRestantes != null)
             textoBugsRestantes.text = "Bugs: " + (numBugs - bugsMarcados);
     }
 
+    // Termina el juego y notifica al GestorMinijuegos si gano
     private void TerminarJuego(bool gano)
     {
         juegoActivo = false;
@@ -171,8 +183,8 @@ public class GestorBuscaBugs : MonoBehaviour
 
         if (gano)
         {
-            GestorMinijuegos.Instance?.MinijuegoCompletado(); 
-            GestorMinijuegos.Instance?.MinijuegoGanado();    
+            GestorMinijuegos.Instance?.MinijuegoCompletado();
+            GestorMinijuegos.Instance?.MinijuegoGanado();
             GameManager.Instance?.AnadirDinero(recompensa);
             textoFinal?.SetText("Bugs eliminados!\n+" + recompensa + " monedas\nTiempo: " + Mathf.FloorToInt(tiempoActual) + "s");
         }
@@ -180,11 +192,9 @@ public class GestorBuscaBugs : MonoBehaviour
         {
             textoFinal?.SetText("Encontraste un bug!\nEl codigo ha fallado...");
         }
-        GestorBBDD.Instance?.RegistrarPartidaMinijuego("BuscaBugs", gano ? 1 : 0);
+        GestorBBDD.Instance?.RegistrarPartidaMinijuego("BuscaBugs", gano ? 1 : 0, gano);
     }
 
-    public void Volver()
-    {
-        SceneManager.LoadScene("CafeScene");
-    }
+    // Vuelve a la cafeteria
+    public void Volver() { SceneManager.LoadScene("CafeScene"); }
 }

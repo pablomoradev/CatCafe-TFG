@@ -1,0 +1,40 @@
+============================================================
+  INSTRUCCIONES DE DESPLIEGUE — CAT CAFE
+============================================================
+
+1. REQUISITOS DEL SISTEMA
+------------------------------------------------------------
+- Windows 10 o superior
+- Procesador x64
+- 4 GB de RAM minimo
+- Tarjeta grafica compatible con DirectX 11
+- 500 MB de espacio libre en disco
+- No necesita conexion a internet
+- No necesita instalar ningun software adicional ni spyware
+
+
+2. COMO EJECUTAR EL JUEGO
+------------------------------------------------------------
+El usuario final solo necesita:
+
+1. Descargar el ZIP del juego.
+2. Extraer el contenido en cualquier carpeta.
+3. Hacer doble clic en CatCafe.exe.
+
+El juego arrancara en modo ventana (1280x768) directamente
+en el menu principal. No necesita instalacion ni permisos
+de administrador.
+
+3. DISTRIBUCION
+------------------------------------------------------------
+La distribución, comercialización o publicación de este
+proyecto sin autorización expresa del autor queda
+terminantemente prohibida.
+Cualquier intento de incumplir esta condición podrá
+dar lugar a las acciones legales oportunas, 
+que serán estudiadas junto con mi abogado Don Alberto Martin Ficias.
+
+============================================================
+  Pablo Mora Lopez - TFG DAM 2025
+  Colegio Santa Ana y San Rafael, Madrid
+============================================================
