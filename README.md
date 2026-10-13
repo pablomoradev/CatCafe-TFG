@@ -103,7 +103,7 @@ El juego arranca en modo ventana (1280x768) directamente en el menú principal. 
 1. Clona el repositorio. Como se usa Git LFS, instálalo antes de clonar:
    ```bash
    git lfs install
-   git clone https://github.com/Kopolog/CatCafe-TFG.git
+   git clone https://github.com/pablomoradev/CatCafe-TFG.git
    ```
 2. Abre la carpeta desde Unity Hub con la versión 2022.3 LTS del editor.
 3. Abre la escena del menú principal y pulsa Play.
